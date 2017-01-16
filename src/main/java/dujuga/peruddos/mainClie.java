@@ -39,7 +39,7 @@ public class mainClie {
             System.out.println("Erreur lors de la connexion : " + ioe.getMessage());
         }
         
-        envoieInt(sock, 4);
+        envoieInt(sock, 3);
     }
     public static void main(String[] args) {
         mainClie mainClie = new mainClie();
