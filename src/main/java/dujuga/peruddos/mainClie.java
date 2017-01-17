@@ -16,9 +16,10 @@ import java.io.DataOutputStream;
  * @author Alexis
  */
 public class mainClie {
-
+    /* Créer une méthode permettant le changement de l'adresse par l'utilisateur. */
     private String adresse = "127.0.0.1";
     
+    /* Envoie un int 'chiffre' au serveur */
     private void envoieInt(Socket sockService, int chiffre){
         try{
             DataOutputStream oStream = new DataOutputStream(sockService.getOutputStream());
@@ -30,6 +31,7 @@ public class mainClie {
               
     }
     
+    /* Connecte le client au serveur */
     private void gestionSocket(){
         Socket sock = null;
         try{
