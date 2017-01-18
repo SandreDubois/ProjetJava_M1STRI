@@ -22,6 +22,11 @@ import java.io.DataOutputStream;
 public class mainServ {
     private int nombreClient = 0; /* Variable qui sert à compter le nombre de client courant. */
     private int serverPort = 18000;
+    String errMessage;
+    
+    /*Add a method to increment mainServ.nombreClient*/
+    /*protected void addClient(); */
+     
     
     private void gestionClient(Socket sockService){
         nombreClient++;
@@ -32,7 +37,7 @@ public class mainServ {
             System.out.println("Le serveur a reçu : " + trois);
         }
         catch(IOException ioe){
-            System.out.println("Erreur lors de l'acceptation du client : " + ioe.getMessage());
+                System.out.println("Erreur lors de l'acceptation du client : " + ioe.getMessage());
         }
             
     }
@@ -64,7 +69,10 @@ public class mainServ {
                 }
                 
                 /* CREER UN THREAD POUR LA GESTION DU CLIENT */
-                gestionClient(sockService);
+                //Without thread :gestionClient(sockService);
+                /* With thread : */
+                PdosSocketServer sock = new PdosSocketServer(sockService);
+                sock.start();       /* Le client est redirigé vers un thread/socket de gestion */
                 
             }
             
