@@ -12,6 +12,10 @@ import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -80,11 +84,24 @@ public class mainServ {
             /* Communication */
     }
     
+    private void declaration()throws UnknownHostException {
+    
+       String adresseipServeur  = InetAddress.getLocalHost().getHostAddress(); 
+          System.out.println("Mon adresse est " + adresseipServeur + ":" + serverPort );
+         
+       
+    }
+       
     /* Fenêtre principale. */
+    
     public static void main(String[] args) {
         mainServ mainServ = new mainServ(); /* instance de la classe principale */
         System.out.println("Création du serveur.");
-        
+        try {
+            mainServ.declaration();
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(mainServ.class.getName()).log(Level.SEVERE, null, ex);
+        }
         mainServ.gestionSocket();
         
     }
