@@ -13,16 +13,13 @@ import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-<<<<<<< HEAD
 import java.io.InputStreamReader;
 import static java.lang.System.in;
 
-=======
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
->>>>>>> origin/Version1
 
 
 /**
@@ -38,23 +35,6 @@ public class mainServ {
     /*Add a method to increment mainServ.nombreClient*/
     protected void delClient(){
         nombreClient--;
-    }
-     
-    
-    private void gestionClient(Socket sockService){
-        nombreClient++;
-        
-        try{
-            DataInputStream iStream = new DataInputStream(sockService.getInputStream());
-            String pseudo = iStream.readUTF();
-            System.out.println("Pseudo du client : " + pseudo);
-            String infoclient = iStream.readUTF();
-            System.out.println(infoclient);
-        }
-        catch(IOException ioe){
-                System.out.println("Erreur lors de l'acceptation du client : " + ioe.getMessage());
-        }
-            
     }
     
     private void gestionSocket(){

@@ -55,13 +55,9 @@ public class mainClie {
         catch(IOException ioe){
             System.out.println("Erreur lors de la connexion : " + ioe.getMessage());
         }
-        envoieInt(sock, 0);
         
-<<<<<<< HEAD
         envoiePseudo(sock);
         envoieIP(sock);
-=======
->>>>>>> origin/Version1
     }
     
     public static void main(String[] args) {
