@@ -13,16 +13,13 @@ import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-<<<<<<< HEAD
 import java.io.InputStreamReader;
 import static java.lang.System.in;
 
-=======
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
->>>>>>> origin/Version1
 
 
 /**
