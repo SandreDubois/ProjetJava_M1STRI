@@ -40,9 +40,8 @@ public class mainClie {
         catch(IOException ioe){
             System.out.println("Erreur lors de la connexion : " + ioe.getMessage());
         }
-        while(true){
-            envoieInt(sock, 0);
-        }
+        envoieInt(sock, 0);
+        
     }
     public static void main(String[] args) {
         mainClie mainClie = new mainClie();
