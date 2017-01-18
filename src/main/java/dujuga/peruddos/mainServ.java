@@ -7,11 +7,15 @@
 package dujuga.peruddos;
 
 
+import java.io.BufferedReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import static java.lang.System.in;
+
 
 
 /**
@@ -28,8 +32,10 @@ public class mainServ {
         
         try{
             DataInputStream iStream = new DataInputStream(sockService.getInputStream());
-            int trois = iStream.readInt();
-            System.out.println("Le serveur a reçu : " + trois);
+            String pseudo = iStream.readUTF();
+            System.out.println("Pseudo du client : " + pseudo);
+            String infoclient = iStream.readUTF();
+            System.out.println(infoclient);
         }
         catch(IOException ioe){
             System.out.println("Erreur lors de l'acceptation du client : " + ioe.getMessage());
