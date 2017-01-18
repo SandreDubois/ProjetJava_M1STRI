@@ -29,7 +29,9 @@ public class mainServ {
     String errMessage;
     
     /*Add a method to increment mainServ.nombreClient*/
-    /*protected void addClient(); */
+    protected void delClient(){
+        nombreClient--;
+    }
      
     
     private void gestionClient(Socket sockService){
@@ -76,7 +78,9 @@ public class mainServ {
                 //Without thread :gestionClient(sockService);
                 /* With thread : */
                 PdosSocketServer sock = new PdosSocketServer(sockService);
+                nombreClient++;
                 sock.start();       /* Le client est redirigé vers un thread/socket de gestion */
+                
                 
             }
             
