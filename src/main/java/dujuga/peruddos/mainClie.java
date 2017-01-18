@@ -10,25 +10,40 @@ import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.net.InetAddress;
+import java.util.Scanner;
 
 /**
  *
- * @author Alexis
+ * @author Dujuga
  */
 public class mainClie {
     /* Créer une méthode permettant le changement de l'adresse par l'utilisateur. */
     private String adresse = "127.0.0.1";
-    
-    /* Envoie un int 'chiffre' au serveur */
-    private void envoieInt(Socket sockService, int chiffre){
+       
+    /* Envoie du pseudo du client  */
+    private void envoiePseudo(Socket sockService){
         try{
+            Scanner pseudo = new Scanner(System.in);
+            System.out.println("Pseudo : ");
+            String str = pseudo.nextLine();
             DataOutputStream oStream = new DataOutputStream(sockService.getOutputStream());
-            oStream.writeInt(chiffre);
+            oStream.writeUTF(str);
+        } catch(IOException ioe){
+            System.out.println("Erreur lors de l'envoie du pseudo : " + ioe.getMessage());
         }
-        catch(IOException ioe){
-            System.out.println("Erreur lors de l'envoie d'un chiffre : " + ioe.getMessage());
+    }
+    
+    /* Envoie de l'IP et du port du client  */
+    private void envoieIP(Socket sockService){
+        try{
+            String ip = InetAddress.getLocalHost().getHostAddress();
+            int port = sockService.getLocalPort() ;
+            DataOutputStream oStream = new DataOutputStream(sockService.getOutputStream());
+            oStream.writeUTF(ip+":"+port);
+        } catch(IOException ioe){
+            System.out.println("Erreur lors de l'envoie du pseudo : " + ioe.getMessage());
         }
-              
     }
     
     /* Connecte le client au serveur */
@@ -42,7 +57,13 @@ public class mainClie {
         }
         envoieInt(sock, 0);
         
+<<<<<<< HEAD
+        envoiePseudo(sock);
+        envoieIP(sock);
+=======
+>>>>>>> origin/Version1
     }
+    
     public static void main(String[] args) {
         mainClie mainClie = new mainClie();
         System.out.println("Début client.");
