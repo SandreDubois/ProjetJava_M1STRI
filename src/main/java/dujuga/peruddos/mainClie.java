@@ -32,7 +32,7 @@ public class mainClie {
     }
     
     /* Connecte le client au serveur */
-    private void gestionSocket(){
+    private void gestionSocket() {
         Socket sock = null;
         try{
             sock = new Socket(adresse, 18000);
@@ -40,8 +40,9 @@ public class mainClie {
         catch(IOException ioe){
             System.out.println("Erreur lors de la connexion : " + ioe.getMessage());
         }
-        
-        envoieInt(sock, 3);
+        while(true){
+            envoieInt(sock, 0);
+        }
     }
     public static void main(String[] args) {
         mainClie mainClie = new mainClie();
