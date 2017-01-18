@@ -13,9 +13,16 @@ import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+<<<<<<< HEAD
 import java.io.InputStreamReader;
 import static java.lang.System.in;
 
+=======
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+>>>>>>> origin/Version1
 
 
 /**
@@ -26,6 +33,13 @@ import static java.lang.System.in;
 public class mainServ {
     private int nombreClient = 0; /* Variable qui sert à compter le nombre de client courant. */
     private int serverPort = 18000;
+    String errMessage;
+    
+    /*Add a method to increment mainServ.nombreClient*/
+    protected void delClient(){
+        nombreClient--;
+    }
+     
     
     private void gestionClient(Socket sockService){
         nombreClient++;
@@ -38,7 +52,7 @@ public class mainServ {
             System.out.println(infoclient);
         }
         catch(IOException ioe){
-            System.out.println("Erreur lors de l'acceptation du client : " + ioe.getMessage());
+                System.out.println("Erreur lors de l'acceptation du client : " + ioe.getMessage());
         }
             
     }
@@ -70,7 +84,12 @@ public class mainServ {
                 }
                 
                 /* CREER UN THREAD POUR LA GESTION DU CLIENT */
-                gestionClient(sockService);
+                //Without thread :gestionClient(sockService);
+                /* With thread : */
+                PdosSocketServer sock = new PdosSocketServer(sockService);
+                nombreClient++;
+                sock.start();       /* Le client est redirigé vers un thread/socket de gestion */
+                
                 
             }
             
@@ -78,11 +97,24 @@ public class mainServ {
             /* Communication */
     }
     
+    private void declaration()throws UnknownHostException {
+    
+       String adresseipServeur  = InetAddress.getLocalHost().getHostAddress(); 
+          System.out.println("Mon adresse est " + adresseipServeur + ":" + serverPort );
+         
+       
+    }
+       
     /* Fenêtre principale. */
+    
     public static void main(String[] args) {
         mainServ mainServ = new mainServ(); /* instance de la classe principale */
         System.out.println("Création du serveur.");
-        
+        try {
+            mainServ.declaration();
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(mainServ.class.getName()).log(Level.SEVERE, null, ex);
+        }
         mainServ.gestionSocket();
         
     }
