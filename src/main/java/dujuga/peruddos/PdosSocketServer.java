@@ -20,7 +20,6 @@ public class PdosSocketServer extends Thread {
     
     private void infoClient(Socket sockService){        
         String errMessage;
-        
         try{
             DataInputStream iStream = new DataInputStream(sockService.getInputStream());
             String pseudo = iStream.readUTF();
@@ -43,7 +42,6 @@ public class PdosSocketServer extends Thread {
     public void run(){
         System.out.println("Création d'un thread.");
         boolean stop = false;
-
         do{
             infoClient(mSockService);
             stop = true;
