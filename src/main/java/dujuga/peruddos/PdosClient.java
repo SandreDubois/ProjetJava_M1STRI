@@ -17,12 +17,12 @@ import java.util.Scanner;
  *
  * @author Dujuga
  */
-public class mainClie {
+public class PdosClient {
     /* Créer une méthode permettant le changement de l'adresse par l'utilisateur. */
     private String adresse = "127.0.0.1";
     Socket sock = null;
     
-    private void ecoute(){
+    /*private void ecoute(){
         try{
             DataInputStream iStream = new DataInputStream(sock.getInputStream());
             String message = iStream.readUTF();
@@ -31,11 +31,11 @@ public class mainClie {
         catch(IOException ioe){
                 System.out.println("Erreur lors de l'écoute: " + ioe.getMessage());
         }
-    }
+    }*/
  
     private String pseudostr;
     /* Envoie du pseudo du client  */
-    private void envoiePseudo(Socket sockService){
+    /*private void envoiePseudo(Socket sockService){
         try{
             Scanner pseudo = new Scanner(System.in);
             System.out.println("Veuillez rentrer votre pseudo : ");
@@ -45,12 +45,12 @@ public class mainClie {
         } catch(IOException ioe){
             System.out.println("Erreur lors de l'envoie du pseudo : " + ioe.getMessage());
         }
-    }
+    }*/
     
     
     
     /* Envoie de l'IP et du port du client  */
-    private void envoieIP(Socket sockService){
+    /*private void envoieIP(Socket sockService){
         try{
             String ip = InetAddress.getLocalHost().getHostAddress();
             int port = sockService.getLocalPort() ;
@@ -59,7 +59,7 @@ public class mainClie {
         } catch(IOException ioe){
             System.out.println("Erreur lors de l'envoie du pseudo : " + ioe.getMessage());
         }
-    }
+    }*/
     
     private void accueil(){
         System.out.println("++++++++++++++++++++++++++++++++++++++++");        
@@ -69,7 +69,7 @@ public class mainClie {
     }
     
     /* Connecte le client au serveur */
-    private void gestionSocket() {
+    /*private void gestionSocket() {
         try{
             sock = new Socket(adresse, 18000);
             System.out.println("Connexion réussi au serveur.");
@@ -82,14 +82,13 @@ public class mainClie {
         envoieIP(sock);
         ecoute();
         ecoute();
-
-        accueil();
-    }
+    }*/
     
     public static void main(String[] args) {
-        mainClie mainClie = new mainClie();
+        PdosClient mainClie = new PdosClient();
         System.out.println("Début client.");
-        mainClie.gestionSocket();
+        //mainClie.gestionSocket
+        mainClie.accueil();
     }
     
 }
