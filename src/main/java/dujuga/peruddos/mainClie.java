@@ -20,7 +20,19 @@ import java.util.Scanner;
 public class mainClie {
     /* Créer une méthode permettant le changement de l'adresse par l'utilisateur. */
     private String adresse = "127.0.0.1";
-       
+    Socket sock = null;
+    
+    private void ecoute(){
+        try{
+            DataInputStream iStream = new DataInputStream(sock.getInputStream());
+            String message = iStream.readUTF();
+            System.out.println(message);
+        }
+        catch(IOException ioe){
+                System.out.println("Erreur lors de l'écoute: " + ioe.getMessage());
+        }
+    }
+    
     /* Envoie du pseudo du client  */
     private void envoiePseudo(Socket sockService){
         try{
@@ -48,7 +60,6 @@ public class mainClie {
     
     /* Connecte le client au serveur */
     private void gestionSocket() {
-        Socket sock = null;
         try{
             sock = new Socket(adresse, 18000);
         }
@@ -58,6 +69,8 @@ public class mainClie {
         
         envoiePseudo(sock);
         envoieIP(sock);
+        ecoute();
+        ecoute();
     }
     
     public static void main(String[] args) {
