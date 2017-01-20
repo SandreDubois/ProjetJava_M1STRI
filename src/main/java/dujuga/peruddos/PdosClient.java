@@ -17,7 +17,7 @@ import java.util.Scanner;
  *
  * @author Dujuga
  */
-public class mainClie {
+public class PdosClient {
     /* Créer une méthode permettant le changement de l'adresse par l'utilisateur. */
     private String adresse = "127.0.0.1";
     private String pseudostr;
@@ -73,7 +73,7 @@ public class mainClie {
     }
     
     public static void main(String[] args) {
-        mainClie mainClie = new mainClie();
+        PdosClient mainClie = new PdosClient();
         System.out.println("Début client.");
         mainClie.gestionSocket();
     }

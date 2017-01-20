@@ -28,7 +28,7 @@ import static javafx.application.Platform.exit;
  * @author Alexis
  * In this file, will be implements the main Server of the game PERUDDOS.
  */
-public class mainServ {
+public class PdosServeur {
     private int nombreClient = 0; /* Variable qui sert à compter le nombre de client courant. */
     private int serverPort = 18000;
     String errMessage;
@@ -98,7 +98,7 @@ public class mainServ {
     /* Fenêtre principale. */
     
     public static void main(String[] args) {
-        mainServ mainServ = new mainServ(); /* instance de la classe principale */
+        PdosServeur mainServ = new PdosServeur(); /* instance de la classe principale */
         if(mainServ.existingServer()){ /* Test si serveur deja existant*/
             System.out.println("Serveur deja existant.");
             System.exit(0);
@@ -107,7 +107,7 @@ public class mainServ {
         try {
             mainServ.declaration();
         } catch (UnknownHostException ex) {
-            Logger.getLogger(mainServ.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(PdosServeur.class.getName()).log(Level.SEVERE, null, ex);
         }
         mainServ.gestionSocket();
         
