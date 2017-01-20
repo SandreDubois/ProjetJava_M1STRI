@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
+import java.io.PipedReader;
+import java.io.PipedWriter;
 import static java.lang.System.in;
 import java.util.ArrayList;
 
@@ -29,14 +31,23 @@ import static javafx.application.Platform.exit;
  * @author Alexis
  * In this file, will be implements the main Server of the game PERUDDOS.
  */
-public class PdosServeur {
+public class PdosServer {
     private int nombreClient = 0; /* Variable qui sert à compter le nombre de client courant. */
+    private int numberOfRoom = 0;
     private int serverPort = 18000;
     String errMessage;
-    
+        
     /*Add a method to increment mainServ.nombreClient*/
     protected void delClient(){
         nombreClient--;
+    }
+    
+    public int getNumberOfClient(){
+        return nombreClient;
+    }
+    
+    public int getNumberOfRoom(){
+        return numberOfRoom;
     }
     
     /* Methode pour savoir si un serveur existe deja*/
@@ -60,33 +71,27 @@ public class PdosServeur {
             /* Création sock écoute + bind */
             try{
                 sockEcoute = new ServerSocket(serverPort);
+                /* CLIENT - Création sock client + bind */
+                /* CLIENT - Demande de Connexion */
+
+                while(getClient){
+                    try{
+                        sockService = sockEcoute.accept();
+                    }
+                    catch(IOException ioe){
+                        System.out.println("Erreur de création du socket service : " + ioe.getMessage());
+                    }
+
+                    /* CREER UN THREAD POUR LA GESTION DU CLIENT */
+                    PdosPlayer player = new PdosPlayer(sockService, nombreClient, this);
+                    player.start();
+                }
             }
             catch(IOException ioe){
                 System.out.println("Erreur de création du server socket : " + ioe.getMessage());
                 /* DEVRAIT-ON GERER DES LOGS ? */
             }
             
-            /* CLIENT - Création sock client + bind */
-            /* CLIENT - Demande de Connexion */
-            
-            while(getClient){
-                try{
-                    sockService = sockEcoute.accept();
-                }
-                catch(IOException ioe){
-                    System.out.println("Erreur de création du socket service : " + ioe.getMessage());
-                }
-                
-                /* CREER UN THREAD POUR LA GESTION DU CLIENT */
-                //Without thread :gestionClient(sockService);
-                /* With thread : */
-                PdosSocketServer sock = new PdosSocketServer(sockService);
-                nombreClient++;
-                sock.start();       /* Le client est redirigé vers un thread/socket de gestion */
-            }
-            
-            /* Acceptation de connexion */
-            /* Communication */
     }
     
     private void declaration()throws UnknownHostException {
@@ -99,7 +104,7 @@ public class PdosServeur {
     /* Fenêtre principale. */
     
     public static void main(String[] args) {
-        PdosServeur mainServ = new PdosServeur(); /* instance de la classe principale */
+        PdosServer mainServ = new PdosServer(); /* instance de la classe principale */
         if(mainServ.existingServer()){ /* Test si serveur deja existant*/
             System.out.println("Serveur deja existant.");
             System.exit(0);
@@ -107,11 +112,10 @@ public class PdosServeur {
         System.out.println("Création du serveur.");
         try {
             mainServ.declaration();
+            mainServ.gestionSocket();
         } catch (UnknownHostException ex) {
-            Logger.getLogger(PdosServeur.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        mainServ.gestionSocket();
-        
+            Logger.getLogger(PdosServer.class.getName()).log(Level.SEVERE, null, ex);
+        }        
     }
     
 }
