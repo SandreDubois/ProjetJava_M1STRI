@@ -177,11 +177,24 @@ public class PdosPlayer extends Thread {
             /* HERE exchange between server & client will be placed here. */
             
             /* Initialisation */
-            try {                
-                /* Acquisition du pseudonyme : */
-                send("Quel est ton pseudonyme ?");
-                send("WAITFOR STR");
-                mPseudo = listen();
+            try {       
+                do{
+                    /* Acquisition du pseudonyme : */
+                    send("Quel est ton pseudonyme ?");
+                    send("WAITFOR STR");
+                    mPseudo = listen();
+                
+                    /* Verify we can add client in the db */
+                    if(!mDaddy.askForClient()){
+                        try {
+                            this.wait(100);
+                        } catch (InterruptedException ex) {
+                            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                } while(!mDaddy.addClient(mPseudo));
+                
+                mDaddy.showClients();
                 
                 /* Acquisition de l'ip : */
                 send("Quel est ton ip ?");

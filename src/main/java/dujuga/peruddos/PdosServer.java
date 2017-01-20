@@ -21,6 +21,8 @@ import java.util.ArrayList;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static javafx.application.Platform.exit;
@@ -36,7 +38,48 @@ public class PdosServer {
     private int numberOfRoom = 0;
     private int serverPort = 18000;
     String errMessage;
+    private Hashtable myClients = new Hashtable();
+    private boolean lockOnClient = false;
+    
+    public boolean askForClient(){
+        if(lockOnClient){
+            /* if hashtable on client */
+            
+            return false;
+        }
+        else{
+            /* if not, lock */
+            lockOnClient = true;
+            return true;
+        }      
+    }
         
+    /* Return false if the pseudo is already taken */
+    public boolean addClient(String pseudo/*, int id*/){
+        if(lockOnClient == false)
+            return false;
+        
+        /* if the pseudo isn't taken */
+        if(!myClients.containsKey(pseudo)){
+            /* Update hashtable */
+            myClients.put(pseudo, 1);
+            lockOnClient = false;
+            return true;
+        }
+        else{
+            /* unlock hashtable */
+            lockOnClient = false;
+            return false;
+        }
+    }
+    
+    public void showClients(){
+        Enumeration e = myClients.elements();
+        
+        while(e.hasMoreElements())
+            System.out.println(e.nextElement());
+    }
+    
     /*Add a method to increment mainServ.nombreClient*/
     protected void delClient(){
         nombreClient--;

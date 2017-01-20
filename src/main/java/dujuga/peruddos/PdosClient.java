@@ -27,7 +27,7 @@ public class PdosClient {
     
     private String listen(){
         String message = "ERROR";
-        System.out.println("J'écoute.");
+        //System.out.println("J'écoute.");
         try{
             DataInputStream iStream = new DataInputStream(sock.getInputStream());
             message = iStream.readUTF();
@@ -42,14 +42,14 @@ public class PdosClient {
     
     /* for string */
     private void send(String message) throws IOException{
-            System.out.println("J'envoie \"" + message + "\"");
+            //System.out.println("J'envoie \"" + message + "\"");
             DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
             oStream.writeUTF(message);
     }
     
     /* for int */
     private void send(int message) throws IOException{
-            System.out.println("J'envoie \"" + message + "\"");
+            //System.out.println("J'envoie \"" + message + "\"");
             DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
             oStream.writeInt(message);
     }
@@ -108,6 +108,7 @@ public class PdosClient {
             System.out.println("Erreur lors de la connexion : " + ioe.getMessage());
         }
                 
+        /* Boucle de dialogue */
         do{
             message = listen();
             if(message.compareTo("WAITFOR INT") == 0){
