@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static javafx.application.Platform.exit;
 
 
 /**
@@ -28,7 +29,7 @@ import java.util.logging.Logger;
  * @author Alexis
  * In this file, will be implements the main Server of the game PERUDDOS.
  */
-public class mainServ {
+public class PdosServeur {
     private int nombreClient = 0; /* Variable qui sert à compter le nombre de client courant. */
     private int serverPort = 18000;
     String errMessage;
@@ -36,6 +37,18 @@ public class mainServ {
     /*Add a method to increment mainServ.nombreClient*/
     protected void delClient(){
         nombreClient--;
+    }
+    
+    /* Methode pour savoir si un serveur existe deja*/
+    private boolean existingServer(){
+        Socket sock = null;
+        try{
+            sock = new Socket("127.0.0.1", 18000);
+            return true;
+        }
+        catch(IOException ioe){
+            return false;
+        }
     }
     
     private void gestionSocket(){
@@ -70,8 +83,6 @@ public class mainServ {
                 PdosSocketServer sock = new PdosSocketServer(sockService);
                 nombreClient++;
                 sock.start();       /* Le client est redirigé vers un thread/socket de gestion */
-                
-                
             }
             
             /* Acceptation de connexion */
@@ -82,19 +93,22 @@ public class mainServ {
     
        String adresseipServeur  = InetAddress.getLocalHost().getHostAddress(); 
           System.out.println("Mon adresse est " + adresseipServeur + ":" + serverPort );
-         
-       
+    
     }
        
     /* Fenêtre principale. */
     
     public static void main(String[] args) {
-        mainServ mainServ = new mainServ(); /* instance de la classe principale */
+        PdosServeur mainServ = new PdosServeur(); /* instance de la classe principale */
+        if(mainServ.existingServer()){ /* Test si serveur deja existant*/
+            System.out.println("Serveur deja existant.");
+            System.exit(0);
+        }
         System.out.println("Création du serveur.");
         try {
             mainServ.declaration();
         } catch (UnknownHostException ex) {
-            Logger.getLogger(mainServ.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(PdosServeur.class.getName()).log(Level.SEVERE, null, ex);
         }
         mainServ.gestionSocket();
         
