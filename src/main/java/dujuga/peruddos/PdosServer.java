@@ -38,7 +38,7 @@ public class PdosServer {
     private int numberOfRoom = 0;
     private int serverPort = 18000;
     String errMessage;
-    private Hashtable myClients = new Hashtable();
+    private ArrayList <PdosPlayer> myClients = new ArrayList();
     private boolean lockOnClient = false;
     
     public boolean askForClient(){
@@ -55,29 +55,26 @@ public class PdosServer {
     }
         
     /* Return false if the pseudo is already taken */
-    public boolean addClient(String pseudo/*, int id*/){
-        if(lockOnClient == false)
-            return false;
+    public int addClient(PdosPlayer newP){        
+        int sauv = myClients.size();
+        int returned = myClients.size();
         
-        /* if the pseudo isn't taken */
-        if(!myClients.containsKey(pseudo)){
-            /* Update hashtable */
-            myClients.put(pseudo, 1);
-            lockOnClient = false;
-            return true;
-        }
-        else{
-            /* unlock hashtable */
-            lockOnClient = false;
-            return false;
-        }
+        if(lockOnClient == false)
+            return -1;
+        
+        myClients.add(newP);
+        returned = myClients.size();
+        showClients();
+        if(returned > sauv)
+            return returned;
+        else
+            return -1;
     }
     
     public void showClients(){
-        Enumeration e = myClients.elements();
-        
-        while(e.hasMoreElements())
-            System.out.println(e.nextElement());
+        for(int i = 0; i < myClients.size(); i++){
+            System.out.println(i + " : " +myClients.get(i).showPseudonyme());
+        }
     }
     
     /*Add a method to increment mainServ.nombreClient*/

@@ -22,13 +22,21 @@ import java.util.logging.Logger;
 public class PdosPlayer extends Thread {
         private int mIdJoueur;
         private Socket mSocket;         /* Add the socket of the client */
-        private String mPseudo;
+        private String mPseudo = null;
         private int mNbDes;
-        private String mIp;
+        private String mIp = null;
         private ArrayList <PdosDice>mDes; /* Declares an ArrayList of PdosDice named mDes */
         private PdosServer mDaddy;
         //private boolean createur;         TBC : NOT NEEDED ;
         //private boolean estSpectateur;    TBC : NOT NEEDED ;
+        
+        public String showPseudonyme(){
+            return mPseudo;
+        }
+        
+        public void setIdJoueur(int id){
+            mIdJoueur = id;
+        }
         
         public boolean hasDice(){
             if(mNbDes > 0){
@@ -51,14 +59,14 @@ public class PdosPlayer extends Thread {
         
         private String listen(){
             String message = "ERROR";
-            System.out.println("J'écoute.");
+            System.out.println("[ME] I'm listening " + mIp);
             try{
                 DataInputStream iStream = new DataInputStream(mSocket.getInputStream());
                 message = iStream.readUTF();
-                System.out.println("J'ai reçu : \"" + message + "\"");
+                System.out.println("[ME] I've heard : \"" + message + "\"");
             }
             catch(IOException ioe){
-                    System.out.println("Erreur lors de l'écoute: " + ioe.getMessage());
+                    System.out.println("[ERR] ON LISTENING : " + ioe.getMessage());
             }
 
             return message;
@@ -131,16 +139,8 @@ public class PdosPlayer extends Thread {
                 mDes.add(new PdosDice());
         }
         
-        public PdosPlayer(String pseudo, Socket sock, int idJoueur){
-            mPseudo = pseudo;
-            mNbDes = 5;
-            mIdJoueur = idJoueur;
-            mDes = new ArrayList();
-            mSocket = sock;
-            mIp = null;
+        public PdosPlayer(){
             
-            for(int i = 0; i < 6; i++) /* Give six dices to the player */
-                mDes.add(new PdosDice());
         }
         
         private void infoClient(Socket sockService){        
@@ -165,7 +165,19 @@ public class PdosPlayer extends Thread {
             
         }
         
+        private void heIsGone(){
+            if(mPseudo == null)
+                mPseudo = "Unknown";
+            
+            if(mIp == null)
+                mIp = "a place we did'nt know";
+            
+            System.err.println("[ERR] Client (" + mPseudo +") disconnected from " + mIp +".");
+            this.stop();
+        }
+        
         public void run(){
+            int cpt = -1;
             System.out.println("Création d'un joueur en cours.");
             String message = null;
             try {
@@ -187,22 +199,25 @@ public class PdosPlayer extends Thread {
                     /* Verify we can add client in the db */
                     if(!mDaddy.askForClient()){
                         try {
-                            this.wait(100);
+                            this.sleep(100);
                         } catch (InterruptedException ex) {
                             Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
-                } while(!mDaddy.addClient(mPseudo));
-                
-                mDaddy.showClients();
+                    cpt = mDaddy.addClient(this);
+                    if(cpt == -1)
+                        send("Echec de l'enregistrement : sélectionner un autre pseudonyme.");
+                } while(cpt == -1);
+                mIdJoueur = cpt;
                 
                 /* Acquisition de l'ip : */
-                send("Quel est ton ip ?");
+                //send("Quel est ton ip ?");
                 send("WAITFOR IP");
                 mIp = listen();
             } catch (IOException ex) {
                 Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
             }
+            
             
             /* Verify numberOfGames */
             if(mDaddy.getNumberOfRoom() == 0){
@@ -214,6 +229,7 @@ public class PdosPlayer extends Thread {
                         message = listen();
                     } catch (IOException ex) {
                         Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+                        this.heIsGone();
                     }
                 } while (message.compareTo("YES") != 0 && message.compareTo("NO") != 0);
                 
@@ -227,9 +243,10 @@ public class PdosPlayer extends Thread {
                         send("END");
                         /* quit */
                         System.out.println("[WAR] The user " + mPseudo + " has been ejected !");
-                        this.stop();
+                        this.heIsGone();
                     } catch (IOException ex) {
                         Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+                        this.heIsGone();
                     }
                     
                 }
@@ -249,6 +266,7 @@ public class PdosPlayer extends Thread {
                     }
                 } catch (IOException ex) {
                     Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+                    this.heIsGone();
                 }
             }
             
