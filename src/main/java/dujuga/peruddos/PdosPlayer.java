@@ -31,6 +31,7 @@ public class PdosPlayer extends Thread {
     private ArrayList <PdosDice>mDes; /* Declares an ArrayList of PdosDice named mDes */
     private PdosServer mDaddy;      /* Main server */
 
+    private boolean inGame = false;
     /**
      * Return the pseudonym of the player.
      * @return String
@@ -39,6 +40,10 @@ public class PdosPlayer extends Thread {
         return mPseudo;
     }
 
+    public void setInGame(boolean i){
+        inGame = i;
+    }
+    
     /**
      * Update the id of the player with the given id.
      * @param id 
@@ -140,7 +145,7 @@ public class PdosPlayer extends Thread {
      * @param message
      * @throws IOException 
      */
-    private void send(String message) throws IOException{
+    public void send(String message) throws IOException{
             System.out.println("J'envoie " + message);
             DataOutputStream oStream = new DataOutputStream(mSocket.getOutputStream());
             oStream.writeUTF(message);
@@ -200,7 +205,7 @@ public class PdosPlayer extends Thread {
             }
         else{
             try {
-                send("ID        Createur        Effectif");
+                send("ID        Effectif        Createur");
             } catch (IOException ex) {
                 Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -209,7 +214,7 @@ public class PdosPlayer extends Thread {
                 current = listRoom.get(i);
 
                 try {
-                    send(current.getIdGame() + "        " + current.getCreatorPseudonym() + "      " + current.getNumberOfPlayers());
+                    send(current.getIdGame() + "      " + current.getNumberOfPlayers() + "/6        " + current.getCreatorPseudonym());
                 } catch (IOException ex) {
                     Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -315,74 +320,120 @@ public class PdosPlayer extends Thread {
      */
     private void createGame(){
         int cpt;
-        try {
-            do{
-                if(!mDaddy.askForRoom()){
-                    try {
-                        this.sleep(100);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+        do{
+            if(!mDaddy.askForRoom()){
+                try {
+                    this.sleep(100);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                cpt = mDaddy.addRoom(this);
-                send("Demande de création de partie : " + cpt);
-            } while(cpt == -1);
-
-
-            send("Votre partie a été créée avec l'ID : " + cpt);
-            send("Mise en veille.");
-        } catch (IOException ex) {
-            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        while(true){
-            try {
-                this.sleep(1000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }
+            cpt = mDaddy.addRoom(this);
+            /* TO_ADD : Stop after somes try */
+        } while(cpt == -1);
+        
+        mDaddy.launchGame(cpt);
+        
+        /* TBC : to remove : not needed.
+            while(true){
+            try {
+            this.sleep(1000);
+            } catch (InterruptedException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            }*/
     }
 
     /**
      * Show the list of existing game then ask to the client if he wants to create/join or quit.
      * @throws IOException 
      */
-    private void chooseGame() throws IOException{
+    private int chooseGame() throws IOException{
         String message = null;
         int recept = -2;
+        boolean OK = false;
+        int cptry = 0;
 
         /* Show existing rooms to client */
         this.showRoomsToClient();
 
         do{
-            send("[ 0 > Créer   |   ID > Rejoindre  |   -1 > Quitter ]");
+            send("[ -1 > Créer   |   ID > Rejoindre  |   -2 > Quitter ]");
             recept = listenInt();
-        } while (recept < -1 || recept > mDaddy.getNumberOfRoom());
+        } while (recept < -2 || recept > mDaddy.getNumberOfRoom());
 
         switch(recept){
-            case -1 :
+            
+            case -2 :   //User wants to quit.
                 send("A bientôt !");
                 send("END");
                 System.out.println("[WAR] The user " + mPseudo + " has been ejected !");
                 this.heIsGone();
                 break;
-            case 0 :
+                
+            case -1 :   //User wants to create a game.
                 createGame();
                 break;
-            default :
-                send("Not handled for now");
-                send("END");
-                System.out.println("[WAR] The user " + mPseudo + " has been ejected !");
-                this.heIsGone();
+            default :   //User join a game.
+                send("Tentative de connexion...");
+                do {
+                    
+                    if(mDaddy.joinGame(this, recept) == -1){
+                        cptry++;
+                    }
+                    else{
+                        OK = true;
+                        setInGame(true);
+                    }
+                    
+                    if(!OK && cptry == 5){
+                        OK = true;
+                        send("Impossible de rejoindre la partie.");
+                    }
+                        
+                } while(!OK);
                 break;
-        }
-
+        }        
+        return recept;
     }
 
     /**
+     * Try to join this player to a game.
+     */
+    private void joinGame(int id){
+        
+    }
+    
+    private void serverHandler(){
+        int cpt = -2;
+        
+        try {
+            cpt = chooseGame();
+        } catch (IOException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        /* trois cas : le joueur veut quitter, il veut créer, il veut rejoindre */
+        switch(cpt){
+            case -2:
+                break;
+            case -1: //Creator handle game :
+                do{
+                    /* Gestion de dialogue avec le serveur */
+                    this.listen(true);
+                } while(inGame == true);
+                break;
+            default: //Join a game :
+                do{
+                    this.listen(true);
+                } while(inGame == true);
+                break;
+        }
+    }
+    
+    /**
      * Main method.
      */
+    @Override
     public void run(){
         int cpt = -1;
         System.out.println("Création d'un joueur en cours.");
@@ -400,30 +451,7 @@ public class PdosPlayer extends Thread {
             Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        try {
-            chooseGame();
-        } catch (IOException ex) {
-            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-
-
-            /*while(true){
-            try {
-            message = askEntry("Message pour " + mPseudo);
-            send(message);
-
-            if(message.compareTo("WAITFOR INT") == 0){
-            listen();
-            }
-            else if(message.compareTo("WAITFOR STR") == 0){
-            listen();
-            }
-            } catch (IOException ex) {
-            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
-            this.heIsGone();
-            }
-            }*/
+        serverHandler();
 
     }
         

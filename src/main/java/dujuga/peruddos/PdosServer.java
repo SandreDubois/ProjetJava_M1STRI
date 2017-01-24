@@ -76,6 +76,15 @@ public class PdosServer {
         if(lockOnClient == false)           /* if there's no lock on the table, return error */
             return -1;
         
+        /* Verify no one has already this pseudonym. */
+        for(int i = 0; i < myClients.size(); i++){
+            if(newP.getPseudonym().compareTo(myClients.get(i).getPseudonym()) == 0){
+                lockOnClient = false;
+                return -1;
+            }
+        }
+            
+        
         myClients.add(newP);                /* if there is a lock, add the client to the table */
         returned = myClients.size(); 
         lockOnClient = false;               /* remove the lock */
@@ -145,6 +154,18 @@ public class PdosServer {
         catch(IOException ioe){
             return false;
         }
+    }
+    
+    /**
+     * Launch the index th games in a new thread.
+     * @param index 
+     */
+    public void launchGame(int index){
+        myRooms.get(index).start();
+    }
+    
+    public int joinGame(PdosPlayer newP, int index){
+        return myRooms.get(index).askToJoin(newP);
     }
     
     /* This method listening for new connexion then redirect it to thread PdosPlayer. */

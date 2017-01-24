@@ -8,6 +8,8 @@ package dujuga.peruddos;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -53,5 +55,82 @@ public class PdosGame extends Thread {
         mListPlayer = new ArrayList();
         mIdPdosGame = index; /* Add index as the id of game */
         mListPlayer.add(creator);
+    }
+    
+    public int askToJoin(PdosPlayer newP){
+        /* To many players are in game */
+        if(mListPlayer.size() >= 6){
+            return -1;
+        }
+        
+        mListPlayer.add(newP);
+        return mListPlayer.size()-1;
+    }
+    
+    private void sendTo(int numberPlayer, String message){
+        if(numberPlayer >= 0 && numberPlayer < mListPlayer.size()){
+            try {
+                mListPlayer.get(numberPlayer).send(message);
+            } catch (IOException ex) {
+                Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }        
+    }
+    
+    private void broadcast(String message){
+        for(int i = 0; i < mListPlayer.size(); i++){
+            sendTo(i, message);
+        }
+    }
+    
+    private void ejectPlayer(int i){
+        sendTo(i, "Vous n'êtes plus dans la partie.");
+        mListPlayer.get(i).setInGame(false);
+    }
+    
+    private void endGame(){
+        broadcast("Un gros GG à " + this.getCreatorPseudonym() + " : victoire écrasante !");
+        
+        for(int i = mListPlayer.size() - 1; i >= 0; i--)
+            ejectPlayer(i);
+    }
+    
+    private void waitingLoop(){
+        int actually = 1;
+        
+        sendTo(0, "Attente de l'arrivée de nouveaux joueurs.");
+        
+        do{
+            /* Si nouveau joueur */
+            if(mListPlayer.size() > actually){
+                sendTo(mListPlayer.size()-1, "Bienvenue dans la partie de " + this.getCreatorPseudonym());
+                broadcast("Le joueur " + mListPlayer.get(actually).getPseudonym() + " a rejoint la partie.");
+                actually = mListPlayer.size();
+            }
+            
+            try {
+                sleep(1000);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } while(mListPlayer.size() < 6);
+        
+    }
+    
+    @Override
+    public void run(){
+        sendTo(0, "Vous avez créer une partie.");
+        
+        waitingLoop();
+        
+        broadcast("La partie est pleine !");
+        
+        do{
+            try {
+                sleep(10000);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } while(true);
     }
 }
