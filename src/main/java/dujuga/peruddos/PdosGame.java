@@ -13,7 +13,7 @@ import java.util.ArrayList;
  *
  * @author Alexis
  */
-public class PdosGame {
+public class PdosGame extends Thread {
     private int mIdPdosGame;
     //private PdosPlayer mCreator; /* Not needed : the creator is the first player in the list. */
     private ArrayList <PdosPlayer>mListPlayer; /* ArrayList where players will be. */
@@ -24,26 +24,17 @@ public class PdosGame {
     public int getNumberOfPlayers(){
         return mListPlayer.size();
     }
-    
-    /*
-        Return  true if the player is accepted ;
-                false if not.
-    */
-    public boolean addPlayer(PdosPlayer newPlayer) throws IOException{
-        if(this.getNumberOfPlayers() < 6){ /* If there is less than 6 players in the game */
-            mListPlayer.add(newPlayer);
-            newPlayer.welcome();
-            return true;
-        }
-        else
-            return false;
-    }
-    
+        
     /*
         Return the id of the game.
     */
-    public int getId(){
+    public int getIdGame(){
         return this.mIdPdosGame;
+    }
+    
+    public String getCreatorPseudonym(){
+        PdosPlayer p = mListPlayer.get(0);
+        return p.getPseudonym();
     }
     
     public void everybodyToss(){
@@ -58,9 +49,9 @@ public class PdosGame {
             Needs a player to create it
                     and an index.
     */
-    public PdosGame(PdosPlayer creator, int index) throws IOException{ /* Create a game with a main player and a index j */
+    public PdosGame(PdosPlayer creator, int index){ /* Create a game with a main player and a index j */
         mListPlayer = new ArrayList();
-        this.addPlayer(creator);
         mIdPdosGame = index; /* Add index as the id of game */
+        mListPlayer.add(creator);
     }
 }

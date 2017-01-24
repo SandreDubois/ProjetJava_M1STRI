@@ -25,13 +25,15 @@ public class PdosClient {
     private String adresse = "127.0.0.1";
     Socket sock = null;
     
+    private static final int errInt = -3;
+    private static final String errStr = "ERROR";
+    
     private String listen(){
-        String message = "ERROR";
+        String message = errStr;
         //System.out.println("J'écoute.");
         try{
             DataInputStream iStream = new DataInputStream(sock.getInputStream());
             message = iStream.readUTF();
-            //System.out.println("J'ai reçu : \"" + message + "\"");
         }
         catch(IOException ioe){
                 System.out.println("Erreur lors de l'écoute: " + ioe.getMessage());
@@ -40,32 +42,32 @@ public class PdosClient {
         return message;
     }
     
-    /* for string */
+    /* send a message (in string) given to the socket mSocket. */
     private void send(String message) throws IOException{
-            //System.out.println("J'envoie \"" + message + "\"");
             DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
             oStream.writeUTF(message);
     }
     
-    /* for int */
+    /* send a message (in int) given to the socket mSocket. */
     private void send(int message) throws IOException{
-            //System.out.println("J'envoie \"" + message + "\"");
             DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
             oStream.writeInt(message);
     }
  
+    /* Waits for the user to write on stdin an return it as a String */
     private String askEntry(){
         Scanner getFromUser = new Scanner(System.in);
-        String returned = null;
+        String returned = errStr;
         System.out.print("> ");
         returned = getFromUser.nextLine();
         
         return returned;
     }
     
+    /* Prints a the message given in argument then wait for the user to write on stdin an return it as a String */
     private String askEntry(String message){
         Scanner getFromUser = new Scanner(System.in);
-        String returned = null;
+        String returned = errStr;
         System.out.println(message);
         System.out.print("> ");
         returned = getFromUser.nextLine();
@@ -73,9 +75,19 @@ public class PdosClient {
         return returned;
     }
     
-    /* Envoie du pseudo du client  */
-    private void envoiePseudo(Socket sockService){
-        String pseudostr = null;
+    /* Waits for the user to write on stdin an return it as a int */
+    private int askNumber(){
+        Scanner getFromUser = new Scanner(System.in);
+        int returned = errInt;
+        System.out.print("> ");
+        returned = getFromUser.nextInt();
+        
+        return returned;
+    }
+    
+    /* Asks the pseudonym that the user wants then sends to the server the pseudonym  */
+    private void getAndSendPseudonyme(Socket sockService){
+        String pseudostr = errStr;
         try{
             send(askEntry("Veuillez entrer votre pseudo."));
         } catch(IOException ioe){
@@ -83,7 +95,7 @@ public class PdosClient {
         }
     }
     
-    /* Envoie de l'IP et du port du client  */
+    /* Sends ip and port to the server  */
     private void sendIP(){
         try{
             String ip = InetAddress.getLocalHost().getHostAddress();
@@ -94,7 +106,7 @@ public class PdosClient {
         }
     }
     
-    /* Connecte le client au serveur */
+    /* Connect user to the server */
     private void socketHandler() throws IOException {
         boolean cont = true;
         String message = null;
@@ -112,7 +124,7 @@ public class PdosClient {
         do{
             message = listen();
             if(message.compareTo("WAITFOR INT") == 0){
-                send(chiffre);
+                send(askNumber());
             }
             else if(message.compareTo("WAITFOR STR") == 0){
                 send(askEntry());
