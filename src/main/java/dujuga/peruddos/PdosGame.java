@@ -19,6 +19,7 @@ public class PdosGame extends Thread {
     private int mIdPdosGame;
     //private PdosPlayer mCreator; /* Not needed : the creator is the first player in the list. */
     private ArrayList <PdosPlayer>mListPlayer; /* ArrayList where players will be. */
+    private PdosServer mDaddy;
     
     /*
         Return the number of player in the game.
@@ -32,6 +33,10 @@ public class PdosGame extends Thread {
     */
     public int getIdGame(){
         return this.mIdPdosGame;
+    }
+    
+    public void setIdGame(int i){
+        mIdPdosGame = i;
     }
     
     public String getCreatorPseudonym(){
@@ -51,9 +56,10 @@ public class PdosGame extends Thread {
             Needs a player to create it
                     and an index.
     */
-    public PdosGame(PdosPlayer creator, int index){ /* Create a game with a main player and a index j */
+    public PdosGame(PdosPlayer creator, int index, PdosServer daddy){ /* Create a game with a main player and a index j */
         mListPlayer = new ArrayList();
         mIdPdosGame = index; /* Add index as the id of game */
+        mDaddy = daddy;
         mListPlayer.add(creator);
     }
     
@@ -69,11 +75,7 @@ public class PdosGame extends Thread {
     
     private void sendTo(int numberPlayer, String message){
         if(numberPlayer >= 0 && numberPlayer < mListPlayer.size()){
-            try {
-                mListPlayer.get(numberPlayer).send(message);
-            } catch (IOException ex) {
-                Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            mListPlayer.get(numberPlayer).send(message);
         }        
     }
     
@@ -95,6 +97,15 @@ public class PdosGame extends Thread {
             ejectPlayer(i);
     }
     
+    private void wakeUpAll(){
+        for(int i = 0; i < mListPlayer.size(); i++)
+            wakeUp(i);
+    }
+    
+    private void wakeUp(int i){
+        mListPlayer.get(i).notifyMe();
+    }
+    
     private void waitingLoop(){
         int actually = 1;
         
@@ -108,6 +119,17 @@ public class PdosGame extends Thread {
                 actually = mListPlayer.size();
             }
             
+            if(!mListPlayer.get(0).isAlive()){
+                broadcast("Le créateur est parti.");
+                if(mListPlayer.isEmpty()){
+                    endGame();
+                    unregister();
+                }
+                else{
+                    broadcast("Le nouveau créateur est :" + this.getCreatorPseudonym());
+                }
+            }
+            
             try {
                 sleep(1000);
             } catch (InterruptedException ex) {
@@ -115,6 +137,23 @@ public class PdosGame extends Thread {
             }
         } while(mListPlayer.size() < 6);
         
+    }
+    
+    private void unregister(){
+        int returned = -1;
+        
+        do{
+            if(mDaddy.askForRoom())
+                returned = mDaddy.delRoom(mIdPdosGame); 
+            
+            try{
+                sleep(100);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+        } while(returned == -1);
+        System.out.println("La partie : " + mIdPdosGame + " a été retiré.");
     }
     
     @Override
@@ -125,12 +164,14 @@ public class PdosGame extends Thread {
         
         broadcast("La partie est pleine !");
         
-        do{
-            try {
-                sleep(10000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } while(true);
+        try {
+            sleep(10000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        endGame();
+        wakeUpAll();
+        unregister();
     }
 }

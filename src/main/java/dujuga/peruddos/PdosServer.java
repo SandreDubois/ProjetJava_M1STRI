@@ -83,7 +83,6 @@ public class PdosServer {
                 return -1;
             }
         }
-            
         
         myClients.add(newP);                /* if there is a lock, add the client to the table */
         returned = myClients.size(); 
@@ -103,17 +102,28 @@ public class PdosServer {
             return -1;
         
         /* Create Room */
-        myRooms.add(new PdosGame(creator, returned));
+        myRooms.add(new PdosGame(creator, returned, this));
         
         returned = myRooms.size(); 
         lockOnRoom = false;               /* remove the lock */
         
         System.out.println(sauv + " " + returned);
         
-        if(returned > sauv)                 /* return the id */
+        if(returned > sauv) {                /* return the id */
+            myRooms.get(sauv).setIdGame(sauv);
             return returned-1;
+        }
         else
             return -1;                      /* if not, return a error */
+    }
+    
+    public int delRoom(int index){
+        if(lockOnRoom == false)
+            return -1;
+        
+        myRooms.remove(index);
+        lockOnRoom = false;
+        return 0;
     }
     
     /* browse the table for send on stdout names of players */
@@ -128,9 +138,10 @@ public class PdosServer {
     }
     
     /*Add a method to increment mainServ.nombreClient*/
+    /* TBC : not needed.
     protected void delClient(){
         nombreClient--;
-    }
+    }*/
     
     /* return the number of client */
     public int getNumberOfClient(){

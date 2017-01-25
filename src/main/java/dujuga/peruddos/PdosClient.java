@@ -5,11 +5,14 @@
  */
 package dujuga.peruddos;
 
+import java.io.ByteArrayInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.InputStream;
+import static java.lang.Thread.sleep;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -25,8 +28,10 @@ public class PdosClient {
     private String adresse = "127.0.0.1";
     Socket sock = null;
     
+    String mMessage = "PDOSNULL";
+    
     private static final int errInt = -3;
-    private static final String errStr = "ERROR";
+    private static final String errStr = "NONE";
     
     private String listen(){
         String message = errStr;
@@ -44,8 +49,8 @@ public class PdosClient {
     
     /* send a message (in string) given to the socket mSocket. */
     private void send(String message) throws IOException{
-            DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
-            oStream.writeUTF(message);
+        DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
+        oStream.writeUTF(message);
     }
     
     /* send a message (in int) given to the socket mSocket. */
@@ -66,13 +71,8 @@ public class PdosClient {
     
     /* Prints a the message given in argument then wait for the user to write on stdin an return it as a String */
     private String askEntry(String message){
-        Scanner getFromUser = new Scanner(System.in);
-        String returned = errStr;
         System.out.println(message);
-        System.out.print("> ");
-        returned = getFromUser.nextLine();
-        
-        return returned;
+        return askEntry();
     }
     
     /* Waits for the user to write on stdin an return it as a int */
@@ -106,20 +106,33 @@ public class PdosClient {
         }
     }
     
+    private int initSocket(){
+        int OK = 0;
+        
+        do{
+            adresse = askEntry("Veuillez entrer l'adresse ip du serveur.");
+            try{
+                sock = new Socket(adresse, 18000);
+                System.out.println("Connexion réussi au serveur.");
+                OK = 1;
+            }
+            catch(IOException ioe){
+                System.out.println("Connexion impossible : " + ioe.getMessage());
+                
+                OK = askEntry("Réessayer ? [YES/NO]").compareTo("YES");    
+                System.out.println(OK);
+            }
+        } while(OK == 0);
+        
+        return OK;
+    }
+    
     /* Connect user to the server */
     private void socketHandler() throws IOException {
         boolean cont = true;
         String message = null;
         int chiffre = 5;
-        
-        try{
-            sock = new Socket(adresse, 18000);
-            System.out.println("Connexion réussi au serveur.");
-        }
-        catch(IOException ioe){
-            System.out.println("Erreur lors de la connexion : " + ioe.getMessage());
-        }
-                
+                        
         /* Boucle de dialogue */
         do{
             message = listen();
@@ -135,21 +148,27 @@ public class PdosClient {
             else if(message.compareTo("END") == 0){
                 cont = false;
             }
+            else if(message.compareTo("PING") == 0){
+                send("return ping");
+            }
             else
                 System.out.println("[SERVEUR] " + message);
         } while(cont); 
         
     }
-    
+        
     public static void main(String[] args) {
         PdosClient mainClie = new PdosClient();
         System.out.println("Début client.");
         
-        try {
-            mainClie.socketHandler();
-        } catch (IOException ex) {
-            Logger.getLogger(PdosClient.class.getName()).log(Level.SEVERE, null, ex);
+        if(mainClie.initSocket() == 1){
+            try {
+                mainClie.socketHandler();
+            } catch (IOException ex) {
+                System.out.println("Oops.");
+            }
         }
+        System.out.println("Bonne soirée !");
     }
     
 }
