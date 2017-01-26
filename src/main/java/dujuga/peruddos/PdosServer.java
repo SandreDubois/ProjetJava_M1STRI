@@ -6,26 +6,14 @@
 
 package dujuga.peruddos;
 
-
-import java.io.BufferedReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.InputStreamReader;
-import java.io.PipedReader;
-import java.io.PipedWriter;
-import static java.lang.System.in;
 import java.util.ArrayList;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static javafx.application.Platform.exit;
 
 
 /**
@@ -33,41 +21,24 @@ import static javafx.application.Platform.exit;
  * @author Alexis
  * In this file, will be implements the main Server of the game PERUDDOS.
  */
-public class PdosServer {
-    private int nombreClient = 0; /* Variable qui sert à compter le nombre de client courant. */
-    /* private int numberOfRoom = 0; Not needed anymore : ArrayList <PdosGame> myRooms.size(); */
-    
-    private int serverPort = 18000;
+public class PdosServer {  
     String errMessage;
-    private ArrayList <PdosPlayer> myClients = new ArrayList();
-    private ArrayList <PdosGame> myRooms = new ArrayList();
-    
     private boolean lockOnClient = false;
     private boolean lockOnRoom = false;
+    private ArrayList <PdosPlayer> myClients = new ArrayList();
+    private ArrayList <PdosGame> myRooms = new ArrayList();
+    private int numberOfClient = 0; /* Variable qui sert à compter le nombre de client courant. */
+    private final int serverPort = 18000;
     
-    public boolean askForClient(){
-        if(lockOnClient){            
-            return false;
-        }
-        else{
-            /* if not, lock */
-            lockOnClient = true;
-            return true;
-        }      
-    }
-    
-    public boolean askForRoom(){
-        if(lockOnRoom){            
-            return false;
-        }
-        else{
-            /* if not, lock */
-            lockOnRoom = true;
-            return true;
-        }      
-    }
-        
-    /* Return false if the pseudo is already taken */
+    /**
+     * Try to add a client. Can fail if :
+     *      - there is no lock on the client list.
+     *      - the pseudonym of the client is already taken.
+     * In the case of a fail, this method return -1.
+     * Otherwise, return the id of the player.
+     * @param newP  : PdosPlayer to add.
+     * @return      : Return the id of the player if there is a success, -1 in case of an error. 
+     */
     public int addClient(PdosPlayer newP){      
         
         int sauv = myClients.size();        /* int keep the initial number of players */
@@ -94,6 +65,13 @@ public class PdosServer {
             return -1;                      /* if not, return a error */
     }
     
+    /**
+     * Try to add a game. Can fail if there is no lock on the room list.
+     * In the case of a fail, this method return -1.
+     * Otherwise, return the id of the game.
+     * @param creator   : PdosPlayer who create the game.
+     * @return          : Return the id of the game if there is a success, -1 in case of an error.
+     */
     public int addRoom(PdosPlayer creator){
         int sauv = myRooms.size();        /* int keep the initial number of players */
         int returned = myRooms.size();    /* for know if the registration works */
@@ -117,6 +95,54 @@ public class PdosServer {
             return -1;                      /* if not, return a error */
     }
     
+    /**
+     * Ask a lock on the client list. If there is already a lock, return false.
+     * return true otherwise and put the lock at true.
+     * @return  : if the lock of the client sucess.
+     */
+    public boolean askForClient(){
+        if(lockOnClient){            
+            return false;
+        }
+        else{
+            /* if not, lock */
+            lockOnClient = true;
+            return true;
+        }      
+    }
+    
+    /**
+     * Ask a lock on the room list. If there is already a lock, return false.
+     * return true otherwise and put the lock at true.
+     * @return  : if the lock of the room sucess.
+     */
+    public boolean askForRoom(){
+        if(lockOnRoom){            
+            return false;
+        }
+        else{
+            /* if not, lock */
+            lockOnRoom = true;
+            return true;
+        }      
+    }
+     
+    /**
+     * Announce on the System.out the address of the server and his port.
+     * @throws UnknownHostException 
+     */
+    private void declarationAtLaunch()throws UnknownHostException {
+       String adresseipServeur  = InetAddress.getLocalHost().getHostAddress(); 
+       System.out.println("Mon adresse est " + adresseipServeur + ":" + serverPort );
+    } 
+    
+    /**
+     * Suppress the room placed at the index in ArrayList PdosGame. 
+     * Can fail if it can't obtain a lock on the room list.
+     * @param index     : the id of the game to remove.
+     * @return          : -1 if it fails.
+     *                  : 0 if it success.
+     */
     public int delRoom(int index){
         if(lockOnRoom == false)
             return -1;
@@ -126,36 +152,11 @@ public class PdosServer {
         return 0;
     }
     
-    /* browse the table for send on stdout names of players */
-    public void showClients(){
-        for(int i = 0; i < myClients.size(); i++){
-            System.out.println(i + " : " +myClients.get(i).getPseudonym());
-        }
-    }
-    
-    public ArrayList<PdosGame> getRooms(){
-        return myRooms;
-    }
-    
-    /*Add a method to increment mainServ.nombreClient*/
-    /* TBC : not needed.
-    protected void delClient(){
-        nombreClient--;
-    }*/
-    
-    /* return the number of client */
-    public int getNumberOfClient(){
-        return myClients.size();
-    }
-    
-    /* return the number of rooms in the server */
-    public int getNumberOfRoom(){
-        return myRooms.size();
-    }
-    
-    /* Verify if there's already an instance of the application
-        - return true if there is. 
-        - return false either otherwise */
+    /**
+     * Verify if there's already an instance of the application.
+     * @return  : true if there is.
+     *          : false otherwise.
+     */
     private boolean existingServer(){
         Socket sock = null;
         try{
@@ -168,6 +169,38 @@ public class PdosServer {
     }
     
     /**
+     * @return the number of clients.
+     */
+    public int getNumberOfClient(){
+        return myClients.size();
+    }
+    
+    /**
+     * @return the number of rooms.
+     */
+    public int getNumberOfRoom(){
+        return myRooms.size();
+    }
+    
+    /**
+     * @return the ArrayList of PdosGames.
+     */
+    public ArrayList<PdosGame> getRooms(){
+        return myRooms;
+    }
+    
+    /**
+     * Invokes the method askToJoin of the game placed with the index in the ArrayList PdosGame
+     * for the PdosPlayer newP.
+     * @param newP      PdosPlayer to add
+     * @param index     Id of the party to join.
+     * @return          the result of the method askToJoin of the party.
+     */
+    public int joinGame(PdosPlayer newP, int index){
+        return myRooms.get(index).askToJoin(newP);
+    }
+    
+    /**
      * Launch the index th games in a new thread.
      * @param index 
      */
@@ -175,50 +208,10 @@ public class PdosServer {
         myRooms.get(index).start();
     }
     
-    public int joinGame(PdosPlayer newP, int index){
-        return myRooms.get(index).askToJoin(newP);
-    }
-    
-    /* This method listening for new connexion then redirect it to thread PdosPlayer. */
-    private void socketHandler(){
-        /* TBC "= null" for sockEcoute & sockService */
-        ServerSocket sockEcoute = null;    //Déclaration du serverSocket.
-        Socket sockService = null;         //Déclaration du socket de service.
-        boolean getClient = true;   //Permet de stopper l'écoute de nouveaux clients.
-        /* Rappel des étapes d'une connexion : */
-            /* Création sock écoute + bind */
-            try{
-                sockEcoute = new ServerSocket(serverPort);
-                /* CLIENT - Création sock client + bind */
-                /* CLIENT - Demande de Connexion */
-
-                while(getClient){
-                    try{
-                        sockService = sockEcoute.accept();
-                    }
-                    catch(IOException ioe){
-                        System.out.println("Erreur de création du socket service : " + ioe.getMessage());
-                    }
-
-                    /* CREER UN THREAD POUR LA GESTION DU CLIENT */
-                    PdosPlayer player = new PdosPlayer(sockService, nombreClient, this);
-                    player.start();
-                }
-            }
-            catch(IOException ioe){
-                System.out.println("Erreur de création du server socket : " + ioe.getMessage());
-                /* DEVRAIT-ON GERER DES LOGS ? */
-            }
-            
-    }
-    
-    /* Announce on stdout the @IP and his port */
-    private void declarationAtLaunch()throws UnknownHostException {
-       String adresseipServeur  = InetAddress.getLocalHost().getHostAddress(); 
-       System.out.println("Mon adresse est " + adresseipServeur + ":" + serverPort );
-    }
-       
-    /* Main method */    
+    /**
+     * Main method
+     * @param args 
+     */
     public static void main(String[] args) {
         PdosServer mainServ = new PdosServer(); /* instance de la classe principale */
         if(mainServ.existingServer()){ /* Test si serveur deja existant*/
@@ -234,4 +227,44 @@ public class PdosServer {
         }        
     }
     
+    /**
+     * Show on the System.out, all players registered.
+     */
+    public void showClients(){
+        for(int i = 0; i < myClients.size(); i++){
+            System.out.println(i + " : " +myClients.get(i).getPseudonym());
+        }
+    }
+    
+    /**
+     * Listen for new connection.
+     */
+    private void socketHandler(){
+        ServerSocket sockEcoute = null;    //Déclaration du serverSocket.
+        Socket sockService = null;         //Déclaration du socket de service.
+        boolean getClient = true;   //Permet de stopper l'écoute de nouveaux clients.
+        /* Rappel des étapes d'une connexion : */
+            /* Création sock écoute + bind */
+            try{
+                sockEcoute = new ServerSocket(serverPort);
+
+                while(getClient){
+                    try{
+                        sockService = sockEcoute.accept();
+                    }
+                    catch(IOException ioe){
+                        System.out.println("Erreur de création du socket service : " + ioe.getMessage());
+                    }
+
+                    /* CREER UN THREAD POUR LA GESTION DU CLIENT */
+                    PdosPlayer player = new PdosPlayer(sockService, numberOfClient, this);
+                    player.start();
+                }
+            }
+            catch(IOException ioe){
+                System.out.println("Erreur de création du server socket : " + ioe.getMessage());
+                /* DEVRAIT-ON GERER DES LOGS ? */
+            }
+            
+    }
 }
