@@ -54,7 +54,7 @@ public class PdosClient {
     }
     
     /* send a message (in int) given to the socket mSocket. */
-    private void send(int message) throws IOException{
+    private void sendInt(int message) throws IOException{
             DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
             oStream.writeInt(message);
     }
@@ -83,6 +83,11 @@ public class PdosClient {
         returned = getFromUser.nextInt();
         
         return returned;
+    }
+    
+    private int askNumber(String message){
+        System.out.println(message);
+        return askNumber();
     }
     
     /* Asks the pseudonym that the user wants then sends to the server the pseudonym  */
@@ -137,10 +142,14 @@ public class PdosClient {
         do{
             message = listen();
             if(message.compareTo("WAITFOR INT") == 0){
-                send(askNumber());
+                sendInt(askNumber());
             }
             else if(message.compareTo("WAITFOR STR") == 0){
                 send(askEntry());
+            }
+            else if(message.compareTo("WAITFOR PRO") == 0){
+                send(askEntry());
+                
             }
             else if(message.compareTo("WAITFOR IP") == 0){
                 sendIP();

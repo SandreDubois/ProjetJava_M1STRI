@@ -81,7 +81,7 @@ public class PdosServer {
         
         /* Create Room */
         myRooms.add(new PdosGame(creator, returned, this));
-        
+        creator.setInGame(true);
         returned = myRooms.size(); 
         lockOnRoom = false;               /* remove the lock */
         
@@ -235,7 +235,6 @@ public class PdosServer {
             System.out.println(i + " : " +myClients.get(i).getPseudonym());
         }
     }
-    
     /**
      * Listen for new connection.
      */

@@ -25,7 +25,7 @@ public class PdosPlayer extends Thread {
     private static final String errStr = "ERROR";
     
     private int mIdJoueur;          /* Id of the player */
-    private Socket mSocket;         /* Socket to talk with client */
+    public Socket mSocket;         /* Socket to talk with client */
     private String mPseudo = null;  /* Pseudonym of the player */
     private String mIp = null;      /* Ip of the player */
     private ArrayList <PdosDice>mDes; /* Declares an ArrayList of PdosDice named mDes */
@@ -33,8 +33,10 @@ public class PdosPlayer extends Thread {
     private boolean mWait = false;
     private boolean mJoueurOk = true;
     private boolean serverWakeMe = false;
-
+    private boolean serverAskMe = false;
+    
     private boolean inGame = false;
+    private PdosGame mGame;
     
     /**
      * Give a PdosDice to the player.
@@ -139,6 +141,13 @@ public class PdosPlayer extends Thread {
     }
     
     /**
+     * @return the number of dice of the player;
+     */
+    public int getNumberOfDices(){
+        return mDes.size();
+    }
+    
+    /**
      * Return the pseudonym of the player.
      * @return String
      */
@@ -146,6 +155,17 @@ public class PdosPlayer extends Thread {
         return mPseudo;
     }
 
+    public int getThatDice(int value){
+        int returned = 0;
+        
+        for(int i = 0; i < mDes.size(); i++){
+            if(mDes.get(i).getValue() == value || mDes.get(i).getValue() == 1)
+                returned++;
+        }
+        
+        return returned;
+    }
+    
     /**
      * Verify that the player has dice.
      * @return boolean
@@ -200,30 +220,30 @@ public class PdosPlayer extends Thread {
      * @param notIp : specify if the content must be an Ip or not.
      * @return String
      */
-    private String listen(boolean notIp){
-        if(notIp)
-            send("WAITFOR STR");
-        else
-            send("WAITFOR IP");
+    public String listen(int cmd) throws IOException{
         String message = "ERROR";
+        if(cmd == 0)
+            send("WAITFOR STR");
+        else if(cmd == 1)
+            send("WAITFOR IP");
+        else if(cmd == 2)
+            send("WAITFOR PRO");
+        message = "ERROR";
         System.out.println("[ME] I'm listening " + mIp);
-        try{
-            DataInputStream iStream = new DataInputStream(mSocket.getInputStream());
-            message = iStream.readUTF();
-            System.out.println("[ME] I've heard : \"" + message + "\"");
-        }
-        catch(IOException ioe){
-                System.out.println("[ERR] ON LISTENING : " + ioe.getMessage());
-        }
+
+        DataInputStream iStream = new DataInputStream(mSocket.getInputStream());
+        message = iStream.readUTF();
+        System.out.println("[ME] I've heard : \"" + message + "\"");
 
         return message;
+        
     }
     
     /**
      * Listening the socket and return the int received.
      * @return 
      */
-    private int listenInt(){
+    private int listenInt() throws IOException{
         send("WAITFOR INT");
         int message = -2;
         System.out.println("[ME] I'm listening " + mIp);
@@ -240,22 +260,30 @@ public class PdosPlayer extends Thread {
         return message;
     }
     
+    public int listenInt(String message) throws IOException{
+        send(message);
+        return listenInt();
+    }
+    
     /**
      * Remove a PdosDice from the player.
      * @throws IOException 
      */
-    public void loseDice() throws IOException{
-        DataOutputStream oStream = new DataOutputStream(mSocket.getOutputStream());
-        oStream.writeUTF("Vous avez perdu un dé.");
-        mDes.remove(mDes.size()-1);
+    public void loseDice() {
+        mDes.remove(0);
     }
     
     /**
      * Notify the thread.
      */
     public synchronized void notifyMe(){
-        notify();
         serverWakeMe = true;
+        notify();
+    }
+    
+    public synchronized void notifyAsk(){
+        serverAskMe = true;
+        notify();
     }
     
     /**
@@ -277,7 +305,7 @@ public class PdosPlayer extends Thread {
         mSocket = sock;
         mDaddy = daddy;           
 
-        for(int i = 0; i < 6; i++) /* Give six dices to the player */
+        for(int i = 0; i < 5; i++) /* Give six dices to the player */
             mDes.add(new PdosDice());
     }
     
@@ -290,7 +318,7 @@ public class PdosPlayer extends Thread {
         do{
             /* Acquisition du pseudonyme : */
             send("Quel est ton pseudonyme ?");
-            mPseudo = listen(true);
+            mPseudo = listen(0);
 
             /* Verify we can add client in the db */
             if(!mDaddy.askForClient()){
@@ -308,7 +336,7 @@ public class PdosPlayer extends Thread {
         mIdJoueur = cpt;
 
         /* Acquisition de l'ip : */
-        mIp = listen(false);
+        mIp = listen(1);
     }
     
     /**
@@ -319,7 +347,11 @@ public class PdosPlayer extends Thread {
         int cpt = -1;
         System.out.println("Création d'un joueur en cours.");
         String message = null;
-        send("Nous allons tenter de vous créer un joueur.");
+        try {
+            send("Nous allons tenter de vous créer un joueur.");
+        } catch (IOException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         /* Initialisation */
         try {       
@@ -331,24 +363,63 @@ public class PdosPlayer extends Thread {
         
         if(mJoueurOk)
             while(serverHandler() == -2 && mJoueurOk);
+        
+        try {
+            send("END");
+        } catch (IOException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
     }
     
     /**
      * Send the message given in parameter to the client.
      * @param message
-     * @throws IOException 
      */
-    public void send(String message) {
+    public void send(String message) throws IOException {
             System.out.println("J'envoie " + message);
             DataOutputStream oStream;
-            try {
+            //try {
                 oStream = new DataOutputStream(mSocket.getOutputStream());
                 oStream.writeUTF(message);
-            } catch (IOException ex) {
+            /*} catch (IOException ex) {
+                System.out.println("[FAT] Player is gone.");
+                heIsGone();
+            }*/
+    }
+    
+    private int getResponse(){
+        int repServ;
+        String rep = "-2";
+        
+        //send("WAITFOR PRO");
+        
+        do{
+            try {
+                rep = listen(2);
+            } catch(IOException ex){
                 System.out.println("[FAT] Player is gone.");
                 heIsGone();
             }
+        }while(rep.compareTo("return ping") == 0 && serverWakeMe);
+        
+        System.out.println("PDOS PLAYER, J'ai reçu : " + rep);
+
+        switch(rep){
+            case "1" :
+                repServ = 1;
+                break;
+            case "2" :
+                repServ = 2;
+                break;
+            case "3" :
+                repServ = 3;
+                break;
+            default :
+                repServ = -3;
+        }
+        
+        return repServ;
     }
     
     /**
@@ -357,6 +428,8 @@ public class PdosPlayer extends Thread {
      */
     private synchronized int serverHandler(){
         int cpt = -2;
+        String rep;
+        int repServ = -2;
         
         try {
             cpt = chooseGame();
@@ -367,25 +440,10 @@ public class PdosPlayer extends Thread {
         switch(cpt){
             case -2:
                 break;
-            case -1: 
-                try {
-                    //Creator handle game :
-                    do{
-                        wait(1000);
-                        send("PING");
-                    } while(!serverWakeMe && mJoueurOk);
-                    
-                } catch (InterruptedException ex) {
-                    System.out.println("Erreur lors de l'attente.");
-                    heIsGone();
-                }
-                
-                break;
-            default: //Join a game :
+            default: //Join or create a game :
                 do{
                     try {
-                        wait(1000);
-                        send("PING");
+                        wait();
                     } catch (InterruptedException ex) {
                         Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -412,33 +470,48 @@ public class PdosPlayer extends Thread {
         inGame = i;
     }
     
+    public void setGame(PdosGame g){
+        mGame = g;
+    }
+    
     /**
      * Show PdosDice of the player.
      */
     public void showDices(){
-        System.out.print("The player " + mPseudo + " haves");
+        try {
+            send("Vos dés sont : ");
+        } catch (IOException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+        }
         for(int i = 0; i < mDes.size(); i++)
-            System.out.print(" " + mDes.get(i).getValue());
-        System.out.println(".");
+            try {
+                send(" " + mDes.get(i).getValue());
+            } catch (IOException ex) {
+                Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+            }
     }
     
     /**
      * Send the client all rooms hosted by the server.
      */
     private void showRoomsToClient(){
-        ArrayList <PdosGame>listRoom = mDaddy.getRooms();
-        PdosGame current;
-
-        if(listRoom.isEmpty())
-            send("Il n'y a pas de salle.");
-        else{
-            send("ID        Effectif        Createur");
+        try {
+            ArrayList <PdosGame>listRoom = mDaddy.getRooms();
+            PdosGame current;
             
-            for(int i = 0; i < listRoom.size(); i++){
-                current = listRoom.get(i);
-                send(current.getIdGame() + "      " + current.getNumberOfPlayers() + "/6        " + current.getCreatorPseudonym());
+            if(listRoom.isEmpty())
+                send("Il n'y a pas de salle.");
+            else{
+                send("ID        Effectif        Createur");
                 
+                for(int i = 0; i < listRoom.size(); i++){
+                    current = listRoom.get(i);
+                    send(current.getIdGame() + "      " + current.getNumberOfPlayers() + "/6        " + current.getCreatorPseudonym());
+                    
+                }
             }
+        } catch (IOException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     

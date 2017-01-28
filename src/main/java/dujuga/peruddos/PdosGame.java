@@ -5,6 +5,7 @@
  */
 package dujuga.peruddos;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +20,10 @@ public class PdosGame extends Thread {
     private int mIdPdosGame;
     private ArrayList <PdosPlayer>mListPlayer; /* ArrayList where players will be. */
     
+    
+    private int mNumber = 1;
+    private int mValor = 1;
+    
     /**
      * Try to add the new PdosPlayer. 
      * Compare the number of player already in the game.
@@ -26,6 +31,7 @@ public class PdosGame extends Thread {
      * @return  the id in the game if the player has been add.
      *          -1 if not.
      */
+    
     public int askToJoin(PdosPlayer newP){
         /* To many players are in game */
         if(mListPlayer.size() >= 6){
@@ -33,6 +39,7 @@ public class PdosGame extends Thread {
         }
         
         mListPlayer.add(newP);
+        newP.setGame(this);
         return mListPlayer.size()-1;
     }
 
@@ -74,18 +81,18 @@ public class PdosGame extends Thread {
      * @param i : index of the PdosPlayer in the mListPlayer.
      */
     private void ejectPlayer(int i){
-        if(i >= 0){
-            sendTo(i, "Vous n'êtes plus dans la partie.");
-            mListPlayer.get(i).setInGame(false);
-            mListPlayer.remove(i);
-        }
+        String msg = mListPlayer.get(i).getPseudonym();
+        mListPlayer.get(i).setInGame(false);
+        mListPlayer.get(i).setGame(null);
+        mListPlayer.remove(i);
+        broadcast("Le joueur " + msg + " s'est déconnecté.");
     }
     
     /**
      * Broadcast to every players in the party that the creator won then ejects every players. 
      */
     private void endGame(){
-        broadcast("Un gros GG à " + this.getCreatorPseudonym() + " : victoire écrasante !");
+        broadcast("Un gros GG à " + mListPlayer.get(0).getPseudonym() + " : victoire écrasante !");
         
         for(int i = mListPlayer.size() - 1; i >= 0; i--)
             ejectPlayer(i);
@@ -99,6 +106,222 @@ public class PdosGame extends Thread {
             mListPlayer.get(i).tossDices();
             mListPlayer.get(i).showDices();
         }
+    }
+    
+    private void outbid(int index){
+        int nbDice = 0;
+        int valorDice = 0;
+        
+        do{
+            do{
+                try {
+                    nbDice = mListPlayer.get(index).listenInt("Enchère - Veuillez donner un nombre de dés : ");
+                } catch (IOException ex) {
+                    System.out.print("Il y avait " + mListPlayer.size());
+                    ejectPlayer(index);
+                    if(index == mListPlayer.size())
+                        firstProposition(0);
+                    else
+                        firstProposition(index);
+                }
+                if(nbDice < 1)
+                        sendTo(index, "Veuillez donner une valeur supérieure à 0.");
+            } while(nbDice < 1);
+
+            do{
+                try {
+                    valorDice = mListPlayer.get(index).listenInt("Enchère - Veuillez donner une valeur de dés : ");
+                } catch (IOException ex) {
+                    ejectPlayer(index);
+                    if(index == mListPlayer.size())
+                        firstProposition(0);
+                    else
+                        firstProposition(index);
+                }
+                if(valorDice < 1 || valorDice > 6)
+                    sendTo(index, "Veuillez donner une valeur comprise dans [1,6].");
+            } while(nbDice < 1 || valorDice > 6);
+            
+            
+        } while(!(nbDice > mNumber || valorDice > mValor));
+        
+        mNumber = nbDice;
+        mValor = valorDice;
+        
+        broadcast(mListPlayer.get(index).getPseudonym() + " a parié : " + mNumber + " " + mValor);
+    }
+    
+    private void liar(int index){
+        int jCurrent = index;
+        int jPrec = index - 1;
+        int cptDice = 0;
+        
+        if(jCurrent == 0)
+            jPrec = mListPlayer.size() - 1;
+        
+        broadcast(mListPlayer.get(jCurrent).getPseudonym() + " a dénoncé " + mListPlayer.get(jPrec).getPseudonym() + ".");
+        
+        for(int i = 0; i < mListPlayer.size(); i++){
+            cptDice += mListPlayer.get(i).getThatDice(mValor);
+        }
+        
+        broadcast("Il y a " + cptDice + " dés de valeur " + mValor + ".");
+        
+        if(cptDice >= mNumber){
+            broadcast(mListPlayer.get(jPrec).getPseudonym() + " n'a pas menti !");
+            broadcast(mListPlayer.get(jCurrent).getPseudonym() + " perd un dé !");
+            mListPlayer.get(jCurrent).loseDice();
+            firstProposition(jCurrent);
+        }
+        else{
+            broadcast(mListPlayer.get(jPrec).getPseudonym() + " a bel et bien menti !");
+            broadcast(mListPlayer.get(jPrec).getPseudonym() + " perd un dé !");
+            mListPlayer.get(jPrec).loseDice();
+            firstProposition(jPrec);
+        }
+            
+    }
+    
+    private void exactly(int index){
+        int cptDice = 0;
+        
+        broadcast(mListPlayer.get(index).getPseudonym() + " tente un tout pile !");
+        
+        for(int i = 0; i < mListPlayer.size(); i++){
+            cptDice += mListPlayer.get(i).getThatDice(mValor);
+        }
+        
+        broadcast("Il y a " + cptDice + " dés de valeur " + mValor + ".");
+        
+        if(cptDice == mNumber){
+            broadcast(mListPlayer.get(index).getPseudonym() + " a réussi son tout pile ! Tu gagnes un dé !");
+            mListPlayer.get(index).addDice();
+        }
+        else{
+            broadcast("Bien essayé " + mListPlayer.get(index).getPseudonym() + ", mais c'est raté ! Tu perds un dé.");
+            mListPlayer.get(index).loseDice();
+        }
+            
+    }
+    /**
+     * Handle the proposition and the turn of the first player.
+     * @param index     : index of the current player.
+     */
+    private void firstProposition(int index){
+        int sommDice = 0;
+        String resp = null;        
+        mNumber = 0;
+        mValor = 0;
+        int nextPlayer;
+        
+        //String jCurrent = mListPlayer.get(index).getPseudonym();
+        
+        everybodyToss(); /* Mélange de tous les dés */
+        
+        /* Vérification si le joueur a toujours des dés */
+        if(didThePlayerLose(index) && index == mListPlayer.size()){
+            index = 0;
+        }
+        broadcast(" - Tour de " + mListPlayer.get(index).getPseudonym() + " - "); /* annonce générale */
+        
+        /* Envoie du nombre de dés restant */
+        for(int i = 0; i < mListPlayer.size(); i++)
+            sommDice += mListPlayer.get(i).getNumberOfDices();
+        
+        this.sendTo(index, "Il reste : " + sommDice + " dés.");      
+        outbid(index);
+        nextPlayer = index + 1;
+        
+        if(index == mListPlayer.size()-1)
+            nextPlayer = 0;
+        
+        proposition(nextPlayer);
+    }
+    
+    private void proposition(int index){
+        int sommDice = 0;
+        String resp = null;
+        int valorDice = 0;
+        int nbDice = 0;
+        int nextPlayer;
+        int precPlayer;
+        
+        /* Vérification si le joueur a toujours des dés */
+        if(didThePlayerLose(index) && index == mListPlayer.size()){
+            index = 0;
+        }
+        
+        broadcast(" - Tour de " + mListPlayer.get(index).getPseudonym() + " - "); /* annonce générale */
+
+        /* Envoie du nombre de dés restant */
+        for(int i = 0; i < mListPlayer.size(); i++)
+            sommDice += mListPlayer.get(i).getNumberOfDices();
+        
+        this.sendTo(index, "Il reste : " + sommDice + " dés.");
+        
+        precPlayer = index - 1;
+        nextPlayer = index + 1;
+        
+        if(index == mListPlayer.size()-1)
+            nextPlayer = 0;
+        if(index == 0)
+            precPlayer =  mListPlayer.size()-1;
+        
+        do{
+            sendTo(index, "Que voulez-vous faire ? ( 1: Surenchérir/ 2: Menteur/ 3: Tout pile.");
+            
+            try {
+                resp = mListPlayer.get(index).listen(2);
+            } catch (IOException ex) {
+                ejectPlayer(index);
+                
+                if(index == mListPlayer.size())
+                    proposition(0);
+                else
+                    proposition(index);
+            }            
+            
+            switch(resp){
+                case "1": /* Surenchère */
+                    outbid(index);
+                    proposition(nextPlayer);
+                    break;
+                case "2": /* Menteur */
+                    liar(index);
+                    break;
+                case "3": /* Tout pile */
+                    exactly(index);
+                    firstProposition(index);
+                    break;
+                default: /* rien */
+                    break;
+            }
+            
+        } while(resp.compareTo("1") != 0 && resp.compareTo("2") != 0 && resp.compareTo("3") != 0);
+        
+    }
+    
+    /**
+     * Verify if the player placed in index place has lose.
+     * @param index     : index of the PdosPlayer.
+     * @return          : if the player has lose.
+     */
+    private boolean didThePlayerLose(int index){
+        boolean returned = (mListPlayer.get(index).hasDice() && mListPlayer.get(index).isAlive());
+        if(!returned){
+            broadcast(mListPlayer.get(index).getPseudonym() + " a perdu et est éliminé.");
+            this.ejectPlayer(index);
+            
+            if(didAPlayerWin()){
+                endGame();
+            }
+        }
+        
+        return returned;
+    }
+    
+    private boolean didAPlayerWin(){
+        return (mListPlayer.size() == 1);
     }
     
     /**
@@ -123,6 +346,7 @@ public class PdosGame extends Thread {
         return mListPlayer.size();
     }
     
+    
     /**
      * Constructor of the PdosGame.
      * Initialize the list of the PdosPlayer;
@@ -135,6 +359,7 @@ public class PdosGame extends Thread {
         mIdPdosGame = index; /* Add index as the id of game */
         mDaddy = daddy;
         mListPlayer.add(creator);
+        
     }
     
     /**
@@ -146,14 +371,31 @@ public class PdosGame extends Thread {
      */
     @Override
     public void run(){
+        int currentJ; /* variable contenant l'id du joueur en train de jouer */
+        
         sendTo(0, "Vous avez créer une partie.");
         
         waitingLoop();
         
         if(!mListPlayer.isEmpty()){
             broadcast("La partie est pleine !");
-            endGame();
+            
+            /* There's some players */
+            
+            /* variable contenant l'id du joueur courant */
+            currentJ = (int) (Math.random() * mListPlayer.size());
+            System.out.println("Premier tour");
+            broadcast("Premier tour.");
+            firstProposition(currentJ);
+            
+            /* boucle de jeu */
+            
             wakeUpAll();
+            endGame();
+        }
+        else{
+            wakeUpAll();
+            endGame();
         }
         
         try {
@@ -171,9 +413,13 @@ public class PdosGame extends Thread {
      * @param numberPlayer  : index, in int, of the player.
      * @param message       : message, in String, to send.
      */
-    private void sendTo(int numberPlayer, String message){
+    private void sendTo(int numberPlayer, String message) {
         if(numberPlayer >= 0 && numberPlayer < mListPlayer.size()){
-            mListPlayer.get(numberPlayer).send(message);
+            try{
+                mListPlayer.get(numberPlayer).send(message);
+            } catch (IOException ex) {
+                ejectPlayer(numberPlayer);
+            }
         }        
     }
 
@@ -236,6 +482,10 @@ public class PdosGame extends Thread {
         
     }
 
+    public synchronized void notifyMe(){
+        this.notify();
+    }
+    
     /**
      * Invokes the wakeUp() method on all players.
      */
