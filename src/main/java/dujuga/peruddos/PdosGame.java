@@ -414,7 +414,7 @@ public class PdosGame extends Thread {
             broadcast("La partie est pleine !");
             wakeUpAllForStart();
             try {
-                wait(5000);
+                sleep(5000);
             } catch (InterruptedException ex) {
                 Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
             }
