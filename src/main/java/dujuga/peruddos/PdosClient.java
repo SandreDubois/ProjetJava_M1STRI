@@ -136,32 +136,43 @@ public class PdosClient {
     private void socketHandler() throws IOException {
         boolean cont = true;
         String message = null;
-        int chiffre = 5;
+        int chiffre = 5, cptNone = 0;
+        
                         
         /* Boucle de dialogue */
         do{
             message = listen();
             if(message.compareTo("WAITFOR INT") == 0){
                 sendInt(askNumber());
+                cptNone = 0;
             }
             else if(message.compareTo("WAITFOR STR") == 0){
                 send(askEntry());
+                cptNone = 0;
             }
             else if(message.compareTo("WAITFOR PRO") == 0){
                 send(askEntry());
+                cptNone = 0;
                 
             }
             else if(message.compareTo("WAITFOR IP") == 0){
                 sendIP();
+                cptNone = 0;
             }
-            else if(message.compareTo("END") == 0){
+            else if(message.compareTo("END") == 0 || cptNone > 5){
                 cont = false;
+                cptNone = 0;
             }
             else if(message.compareTo("PING") == 0){
                 send("return ping");
+                cptNone = 0;
+            }
+            else if(message.compareTo("NONE") == 0){
+                cptNone++;
             }
             else
                 System.out.println("[SERVEUR] " + message);
+            
         } while(cont); 
         
     }
