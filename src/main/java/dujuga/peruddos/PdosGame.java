@@ -120,7 +120,7 @@ public class PdosGame extends Thread {
                     System.out.print("Il y avait " + mListPlayer.size());
                     loseConnection = true;
                 }
-                if(nbDice < 1 && !loseConnection)
+                if(nbDice < mNumber && !loseConnection)
                         sendTo(index, "Veuillez donner une valeur supérieure à 0.");
             } while(nbDice < 1 && !loseConnection);
 
@@ -135,7 +135,7 @@ public class PdosGame extends Thread {
                 }
                 if((valorDice < 1 || valorDice > 6) && !loseConnection)
                     sendTo(index, "Veuillez donner une valeur comprise dans [1,6].");
-            } while((nbDice < 1 || valorDice > 6) && !loseConnection);
+            } while((valorDice < 1 || valorDice > 6) && !loseConnection);
             
             
         } while(!(nbDice > mNumber || valorDice > mValor) && !loseConnection);
@@ -152,10 +152,13 @@ public class PdosGame extends Thread {
     private void liar(int index){
         int jCurrent = index;
         int jPrec = index - 1;
+        String pseudonymPrec = "";
         int cptDice = 0;
         
         if(jCurrent == 0)
             jPrec = mListPlayer.size() - 1;
+        
+        pseudonymPrec = mListPlayer.get(jPrec).getPseudonym();
         
         broadcast(mListPlayer.get(jCurrent).getPseudonym() + " a dénoncé " + mListPlayer.get(jPrec).getPseudonym() + ".");
         
@@ -165,19 +168,25 @@ public class PdosGame extends Thread {
         
         broadcast("Il y a " + cptDice + " dés de valeur " + mValor + ".");
         
-        if(cptDice >= mNumber){
-            broadcast(mListPlayer.get(jPrec).getPseudonym() + " n'a pas menti !");
-            broadcast(mListPlayer.get(jCurrent).getPseudonym() + " perd un dé !");
-            mListPlayer.get(jCurrent).loseDice();
-            firstProposition(jCurrent);
-        }
-        else{
-            broadcast(mListPlayer.get(jPrec).getPseudonym() + " a bel et bien menti !");
-            broadcast(mListPlayer.get(jPrec).getPseudonym() + " perd un dé !");
-            mListPlayer.get(jPrec).loseDice();
+        //Vérification de la correspondance Pseudo - Id.
+        if(mListPlayer.get(jPrec).getPseudonym().compareTo(pseudonymPrec) !=0 ){
+            broadcast(pseudonymPrec + " s'est déconnecté, par peur du scandale.");
             firstProposition(jPrec);
         }
-            
+        else{
+            if(cptDice >= mNumber){
+                broadcast(mListPlayer.get(jPrec).getPseudonym() + " n'a pas menti !");
+                broadcast(mListPlayer.get(jCurrent).getPseudonym() + " perd un dé !");
+                mListPlayer.get(jCurrent).loseDice();
+                firstProposition(jCurrent);
+            }
+            else{
+                broadcast(mListPlayer.get(jPrec).getPseudonym() + " a bel et bien menti !");
+                broadcast(mListPlayer.get(jPrec).getPseudonym() + " perd un dé !");
+                mListPlayer.get(jPrec).loseDice();
+                firstProposition(jPrec);
+            }
+        }
     }
     
     private void exactly(int index){
