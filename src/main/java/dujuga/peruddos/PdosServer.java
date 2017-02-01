@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Alexis
+ * @author Dujuga
  * In this file, will be implements the main Server of the game PERUDDOS.
  */
 public class PdosServer {  
@@ -235,6 +235,7 @@ public class PdosServer {
             System.out.println(i + " : " +myClients.get(i).getPseudonym());
         }
     }
+    
     /**
      * Listen for new connection.
      */

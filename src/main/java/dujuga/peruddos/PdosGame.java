@@ -12,15 +12,13 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Alexis
+ * @author Dujuga
  */
 public class PdosGame extends Thread {
     
     private PdosServer mDaddy;
     private int mIdPdosGame;
     private ArrayList <PdosPlayer>mListPlayer; /* ArrayList where players will be. */
-    
-    
     private int mNumber = 1;
     private int mValor = 1;
     
@@ -31,7 +29,6 @@ public class PdosGame extends Thread {
      * @return  the id in the game if the player has been add.
      *          -1 if not.
      */
-    
     public int askToJoin(PdosPlayer newP){
         /* To many players are in game */
         if(mListPlayer.size() >= 6){
@@ -107,87 +104,10 @@ public class PdosGame extends Thread {
         }
     }
     
-    private boolean outbid(int index){
-        int nbDice = 0;
-        int valorDice = 0;
-        boolean loseConnection = false;
-        
-        do{
-            do{
-                try {
-                    nbDice = mListPlayer.get(index).listenInt("Enchère - Veuillez donner un nombre de dés : ");
-                } catch (IOException ex) {
-                    System.out.print("Il y avait " + mListPlayer.size());
-                    loseConnection = true;
-                }
-                if(nbDice < mNumber && !loseConnection)
-                        sendTo(index, "Veuillez donner une valeur supérieure à " + mNumber + ".");
-            } while(nbDice < mNumber && !loseConnection);
-
-            do{
-                try {
-                    valorDice = mListPlayer.get(index).listenInt("Enchère - Veuillez donner une valeur de dés : ");
-                } catch (IOException ex) {
-                    System.out.print("Il y avait " + mListPlayer.size());
-                    loseConnection = true;
-                }
-                if((valorDice < 1 || valorDice > 6) && !loseConnection)
-                    sendTo(index, "Veuillez donner une valeur comprise dans [1,6].");
-            } while((valorDice < 1 || valorDice > 6) && !loseConnection);
-            
-            if(!(nbDice > mNumber || valorDice > mValor) && !loseConnection)
-                sendTo(index, "Veuillez entrer une surchère valide.");
-        } while(!(nbDice > mNumber || valorDice > mValor) && !loseConnection);
-        
-        if(!loseConnection){
-            mNumber = nbDice;
-            mValor = valorDice;
-            broadcast(mListPlayer.get(index).getPseudonym() + " a parié : " + mNumber + " " + mValor);
-        }
-        
-        return loseConnection;
-    }
-    
-    private void liar(int index){
-        int jCurrent = index;
-        int jPrec = index - 1;
-        String pseudonymPrec = "";
-        int cptDice = 0;
-        
-        if(jCurrent == 0)
-            jPrec = mListPlayer.size() - 1;
-        
-        pseudonymPrec = mListPlayer.get(jPrec).getPseudonym();
-        
-        broadcast(mListPlayer.get(jCurrent).getPseudonym() + " a dénoncé " + mListPlayer.get(jPrec).getPseudonym() + ".");
-        
-        for(int i = 0; i < mListPlayer.size(); i++){
-            cptDice += mListPlayer.get(i).getThatDice(mValor);
-        }
-        
-        broadcast("Il y a " + cptDice + " dés de valeur " + mValor + ".");
-        
-        //Vérification de la correspondance Pseudo - Id.
-        if(mListPlayer.get(jPrec).getPseudonym().compareTo(pseudonymPrec) !=0 ){
-            broadcast(pseudonymPrec + " s'est déconnecté, par peur du scandale.");
-            firstProposition(jPrec);
-        }
-        else{
-            if(cptDice >= mNumber){
-                broadcast(mListPlayer.get(jPrec).getPseudonym() + " n'a pas menti !");
-                broadcast(mListPlayer.get(jCurrent).getPseudonym() + " perd un dé !");
-                mListPlayer.get(jCurrent).loseDice();
-                firstProposition(jCurrent);
-            }
-            else{
-                broadcast(mListPlayer.get(jPrec).getPseudonym() + " a bel et bien menti !");
-                broadcast(mListPlayer.get(jPrec).getPseudonym() + " perd un dé !");
-                mListPlayer.get(jPrec).loseDice();
-                firstProposition(jPrec);
-            }
-        }
-    }
-    
+    /**
+     * Verify if the index player has succeed a "Tout pile".
+     * @param index
+     */
     private void exactly(int index){
         int cptDice = 0;
         int sizeDep = mListPlayer.size();
@@ -225,26 +145,6 @@ public class PdosGame extends Thread {
         }
         else
             broadcast(pseudonym + " s'est échappé avant les résultats !");
-    }
-    
-    private void ping(int index) throws IOException{
-        sendTo(index, "PING");
-        mListPlayer.get(index).listen(2);
-    }
-    
-    private void loseConnectionDuringGame(int index, boolean firstP){
-        int nextPlayer = index;
-        
-        ejectPlayer(index);
-        
-        if(nextPlayer == mListPlayer.size())
-            nextPlayer = 0;
-        
-        if(firstP)
-            firstProposition(nextPlayer);
-        else
-            proposition(nextPlayer);
-        
     }
     
     /**
@@ -291,6 +191,194 @@ public class PdosGame extends Thread {
         }
     }
     
+    /**
+     * Verify if the player placed in index place has lose.
+     * @param index     : index of the PdosPlayer.
+     * @return          : if the player has lose.
+     */
+    private boolean didThePlayerLose(int index){
+        if(index < mListPlayer.size()){
+            boolean returned = (mListPlayer.get(index).hasDice() && mListPlayer.get(index).isAlive());
+            
+            if(!returned){
+                broadcast(mListPlayer.get(index).getPseudonym() + " a perdu et est éliminé.");
+                this.ejectPlayer(index);
+            }
+            
+            return returned;
+        }
+        return false;
+    }
+    
+    /**
+     * Return if the player is the last one in the party
+     * @return 
+     */
+    private boolean didAPlayerWin(){
+        return (mListPlayer.size() == 1);
+    }
+    
+    /**
+     * @return the pseudonym of the creator in String.
+     */
+    public String getCreatorPseudonym(){
+        PdosPlayer p = mListPlayer.get(0);
+        return p.getPseudonym();
+    }
+    
+    /**
+     * @return the id of the game in int.
+     */
+    public int getIdGame(){
+        return this.mIdPdosGame;
+    }
+    
+    /**
+     * @return the number of player in the game.
+     */
+    public int getNumberOfPlayers(){
+        return mListPlayer.size();
+    }
+    
+    /**
+     * Verify of the index-1 player is a liar or not.
+     * @param index 
+     */
+    private void liar(int index){
+        int jCurrent = index;
+        int jPrec = index - 1;
+        String pseudonymPrec = "";
+        int cptDice = 0;
+        
+        if(jCurrent == 0)
+            jPrec = mListPlayer.size() - 1;
+        
+        pseudonymPrec = mListPlayer.get(jPrec).getPseudonym();
+        
+        broadcast(mListPlayer.get(jCurrent).getPseudonym() + " a dénoncé " + mListPlayer.get(jPrec).getPseudonym() + ".");
+        
+        for(int i = 0; i < mListPlayer.size(); i++){
+            cptDice += mListPlayer.get(i).getThatDice(mValor);
+        }
+        
+        broadcast("Il y a " + cptDice + " dés de valeur " + mValor + ".");
+        
+        //Vérification de la correspondance Pseudo - Id.
+        if(mListPlayer.get(jPrec).getPseudonym().compareTo(pseudonymPrec) !=0 ){
+            broadcast(pseudonymPrec + " s'est déconnecté, par peur du scandale.");
+            firstProposition(jPrec);
+        }
+        else{
+            if(cptDice >= mNumber){
+                broadcast(mListPlayer.get(jPrec).getPseudonym() + " n'a pas menti !");
+                broadcast(mListPlayer.get(jCurrent).getPseudonym() + " perd un dé !");
+                mListPlayer.get(jCurrent).loseDice();
+                firstProposition(jCurrent);
+            }
+            else{
+                broadcast(mListPlayer.get(jPrec).getPseudonym() + " a bel et bien menti !");
+                broadcast(mListPlayer.get(jPrec).getPseudonym() + " perd un dé !");
+                mListPlayer.get(jPrec).loseDice();
+                firstProposition(jPrec);
+            }
+        }
+    }
+    
+    /**
+     * Verify if the index player has lost his connection during the party
+     * @param index
+     * @param firstP    specify if the player plays first.
+     */
+    private void loseConnectionDuringGame(int index, boolean firstP){
+        int nextPlayer = index;
+        
+        ejectPlayer(index);
+        
+        if(nextPlayer == mListPlayer.size())
+            nextPlayer = 0;
+        
+        if(firstP)
+            firstProposition(nextPlayer);
+        else
+            proposition(nextPlayer);
+        
+    }
+    
+    /**
+     * For the index player, ask to client for outbid the current load.
+     * @param index
+     * @return if the player has disconnect during the method
+     */
+    private boolean outbid(int index){
+        int nbDice = 0;
+        int valorDice = 0;
+        boolean loseConnection = false;
+        
+        do{
+            do{
+                try {
+                    nbDice = mListPlayer.get(index).listenInt("Enchère - Veuillez donner un nombre de dés : ");
+                } catch (IOException ex) {
+                    System.out.print("Il y avait " + mListPlayer.size());
+                    loseConnection = true;
+                }
+                if(nbDice < mNumber && !loseConnection)
+                        sendTo(index, "Veuillez donner une valeur supérieure à " + mNumber + ".");
+            } while(nbDice < mNumber && !loseConnection);
+
+            do{
+                try {
+                    valorDice = mListPlayer.get(index).listenInt("Enchère - Veuillez donner une valeur de dés : ");
+                } catch (IOException ex) {
+                    System.out.print("Il y avait " + mListPlayer.size());
+                    loseConnection = true;
+                }
+                if((valorDice < 1 || valorDice > 6) && !loseConnection)
+                    sendTo(index, "Veuillez donner une valeur comprise dans [1,6].");
+            } while((valorDice < 1 || valorDice > 6) && !loseConnection);
+            
+            if(!(nbDice > mNumber || valorDice > mValor) && !loseConnection)
+                sendTo(index, "Veuillez entrer une surchère valide.");
+        } while(!(nbDice > mNumber || valorDice > mValor) && !loseConnection);
+        
+        if(!loseConnection){
+            mNumber = nbDice;
+            mValor = valorDice;
+            broadcast(mListPlayer.get(index).getPseudonym() + " a parié : " + mNumber + " " + mValor);
+        }
+        
+        return loseConnection;
+    }
+    
+    /**
+     * Constructor of the PdosGame.
+     * Initialize the list of the PdosPlayer;
+     * @param creator   : PdosPlayer who lead the party. Add it to the ArrayList of PdosPlayer.
+     * @param index     : is the id of the game.
+     * @param daddy     : is the server who host the game.
+     */
+    public PdosGame(PdosPlayer creator, int index, PdosServer daddy){ /* Create a game with a main player and a index j */
+        mListPlayer = new ArrayList();
+        mIdPdosGame = index; /* Add index as the id of game */
+        mDaddy = daddy;
+        mListPlayer.add(creator);
+        
+    }
+    
+    /**
+     * Ping the index player.
+     * @param index
+     * @throws IOException 
+     */
+    private void ping(int index) throws IOException{
+        sendTo(index, "PING");
+        mListPlayer.get(index).listen(2);
+    }
+    
+    /**
+     * Handle the proposition and the turn of the current player.
+     * @param index     : index of the current player.
+     */
     private void proposition(int index){
         int sommDice = 0;
         String resp = "0";
@@ -357,67 +445,6 @@ public class PdosGame extends Thread {
                 loseConnectionDuringGame(index, false);
             }
         }
-    }
-    
-    /**
-     * Verify if the player placed in index place has lose.
-     * @param index     : index of the PdosPlayer.
-     * @return          : if the player has lose.
-     */
-    private boolean didThePlayerLose(int index){
-        if(index < mListPlayer.size()){
-            boolean returned = (mListPlayer.get(index).hasDice() && mListPlayer.get(index).isAlive());
-            
-            if(!returned){
-                broadcast(mListPlayer.get(index).getPseudonym() + " a perdu et est éliminé.");
-                this.ejectPlayer(index);
-            }
-            
-            return returned;
-        }
-        return false;
-    }
-    
-    private boolean didAPlayerWin(){
-        return (mListPlayer.size() == 1);
-    }
-    
-    /**
-     * @return the pseudonym of the creator in String.
-     */
-    public String getCreatorPseudonym(){
-        PdosPlayer p = mListPlayer.get(0);
-        return p.getPseudonym();
-    }
-    
-    /**
-     * @return the id of the game in int.
-     */
-    public int getIdGame(){
-        return this.mIdPdosGame;
-    }
-    
-    /**
-     * @return the number of player in the game.
-     */
-    public int getNumberOfPlayers(){
-        return mListPlayer.size();
-    }
-    
-    
-    /**
-     * Constructor of the PdosGame.
-     * Initialize the list of the PdosPlayer;
-     * @param creator   : PdosPlayer who lead the party. Add it to the ArrayList of PdosPlayer.
-     * @param index     : is the id of the game.
-     * @param daddy     : is the server who host the game.
-     */
-    public PdosGame(PdosPlayer creator, int index, PdosServer daddy){ /* Create a game with a main player and a index j */
-        mListPlayer = new ArrayList();
-        mIdPdosGame = index; /* Add index as the id of game */
-        mDaddy = daddy;
-        mListPlayer.add(creator);
-        
     }
     
     /**
@@ -546,6 +573,9 @@ public class PdosGame extends Thread {
             wakeUp(i);
     }
     
+    /**
+     * Invokes the wakeUp() method on player and notify them that the party start.
+     */
     private void wakeUpAllForStart(){
         for(int i = 0; i < mListPlayer.size(); i++)
             mListPlayer.get(i).notifyAsk();

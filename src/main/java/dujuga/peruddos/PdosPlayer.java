@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author quentin
+ * @author Dujuga
  */
 public class PdosPlayer extends Thread {
     
@@ -175,6 +175,43 @@ public class PdosPlayer extends Thread {
     }
     
     /**
+     * 
+     * @return 
+     */
+    private int getResponse(){
+        int repServ;
+        String rep = "-2";
+        
+        
+        do{
+            try {
+                rep = listen(2);
+            } catch(IOException ex){
+                System.out.println("[FAT] Player is gone.");
+                heIsGone();
+            }
+        }while(rep.compareTo("return ping") == 0 && serverWakeMe);
+        
+        System.out.println("PDOS PLAYER, J'ai reçu : " + rep);
+
+        switch(rep){
+            case "1" :
+                repServ = 1;
+                break;
+            case "2" :
+                repServ = 2;
+                break;
+            case "3" :
+                repServ = 3;
+                break;
+            default :
+                repServ = -3;
+        }
+        
+        return repServ;
+    }
+    
+    /**
      * Verify that the player has dice.
      * @return boolean
      */
@@ -225,6 +262,7 @@ public class PdosPlayer extends Thread {
     
     /**
      * Listening the socket and return the string received.
+     * @param cmd
      * @param notIp : specify if the content must be an Ip or not.
      * @return String
      */
@@ -393,39 +431,6 @@ public class PdosPlayer extends Thread {
             DataOutputStream oStream;
             oStream = new DataOutputStream(mSocket.getOutputStream());
             oStream.writeUTF(message);
-    }
-    
-    private int getResponse(){
-        int repServ;
-        String rep = "-2";
-        
-        
-        do{
-            try {
-                rep = listen(2);
-            } catch(IOException ex){
-                System.out.println("[FAT] Player is gone.");
-                heIsGone();
-            }
-        }while(rep.compareTo("return ping") == 0 && serverWakeMe);
-        
-        System.out.println("PDOS PLAYER, J'ai reçu : " + rep);
-
-        switch(rep){
-            case "1" :
-                repServ = 1;
-                break;
-            case "2" :
-                repServ = 2;
-                break;
-            case "3" :
-                repServ = 3;
-                break;
-            default :
-                repServ = -3;
-        }
-        
-        return repServ;
     }
     
     /**

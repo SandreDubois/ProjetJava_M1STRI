@@ -7,7 +7,7 @@ package dujuga.peruddos;
 
 /**
  *
- * @author Alexis
+ * @author Dujuga
  */
 public class PdosDice {
     int mValeur;
