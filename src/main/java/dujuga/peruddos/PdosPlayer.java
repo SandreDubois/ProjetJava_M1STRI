@@ -497,17 +497,21 @@ public class PdosPlayer extends Thread {
      * Show PdosDice of the player.
      */
     public void showDices(){
+        String message = "";
+        
         try {
             send("Vos dés sont : ");
         } catch (IOException ex) {
             Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
         }
         for(int i = 0; i < mDes.size(); i++)
-            try {
-                send(" " + mDes.get(i).getValue());
-            } catch (IOException ex) {
-                Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            message = message + " " + mDes.get(i).getValue();
+        
+        try {
+            send(message);
+        } catch (IOException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     /**

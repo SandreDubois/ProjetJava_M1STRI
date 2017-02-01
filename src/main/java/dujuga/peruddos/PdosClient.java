@@ -4,20 +4,12 @@
  * and open the template in the editor.
  */
 package dujuga.peruddos;
-
-import java.io.ByteArrayInputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.InputStream;
-import static java.lang.Thread.sleep;
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
