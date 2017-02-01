@@ -121,11 +121,9 @@ public class PdosGame extends Thread {
                     loseConnection = true;
                 }
                 if(nbDice < mNumber && !loseConnection)
-                        sendTo(index, "Veuillez donner une valeur supérieure à 0.");
-            } while(nbDice < 1 && !loseConnection);
+                        sendTo(index, "Veuillez donner une valeur supérieure à " + mNumber + ".");
+            } while(nbDice < mNumber && !loseConnection);
 
-            System.out.println("On sort de la première boucle");
-            
             do{
                 try {
                     valorDice = mListPlayer.get(index).listenInt("Enchère - Veuillez donner une valeur de dés : ");
@@ -137,7 +135,8 @@ public class PdosGame extends Thread {
                     sendTo(index, "Veuillez donner une valeur comprise dans [1,6].");
             } while((valorDice < 1 || valorDice > 6) && !loseConnection);
             
-            
+            if(!(nbDice > mNumber || valorDice > mValor) && !loseConnection)
+                sendTo(index, "Veuillez entrer une surchère valide.");
         } while(!(nbDice > mNumber || valorDice > mValor) && !loseConnection);
         
         if(!loseConnection){
@@ -191,8 +190,13 @@ public class PdosGame extends Thread {
     
     private void exactly(int index){
         int cptDice = 0;
+        int sizeDep = mListPlayer.size();
+        String pseudonym = mListPlayer.get(index).getPseudonym();
+        int intDep = index;
+        
         
         broadcast(mListPlayer.get(index).getPseudonym() + " tente un tout pile !");
+        
         
         for(int i = 0; i < mListPlayer.size(); i++){
             cptDice += mListPlayer.get(i).getThatDice(mValor);
@@ -200,15 +204,27 @@ public class PdosGame extends Thread {
         
         broadcast("Il y a " + cptDice + " dés de valeur " + mValor + ".");
         
-        if(cptDice == mNumber){
-            broadcast(mListPlayer.get(index).getPseudonym() + " a réussi son tout pile ! Tu gagnes un dé !");
-            mListPlayer.get(index).addDice();
+        if(sizeDep != mListPlayer.size()){
+            intDep = -1;
+            for(int i = 0; i < mListPlayer.size(); i++){
+                if(mListPlayer.get(i).getPseudonym().compareTo(pseudonym) == 0){
+                    intDep = i;
+                }
+            }
         }
-        else{
-            broadcast("Bien essayé " + mListPlayer.get(index).getPseudonym() + ", mais c'est raté ! Tu perds un dé.");
-            mListPlayer.get(index).loseDice();
+        
+        if(intDep != -1){
+            if(cptDice == mNumber){
+                broadcast(mListPlayer.get(intDep).getPseudonym() + " a réussi son tout pile ! Tu gagnes un dé !");
+                mListPlayer.get(intDep).addDice();
+            }
+            else{
+                broadcast("Bien essayé " + mListPlayer.get(intDep).getPseudonym() + ", mais c'est raté ! Tu perds un dé.");
+                mListPlayer.get(intDep).loseDice();
+            }  
         }
-            
+        else
+            broadcast(pseudonym + " s'est échappé avant les résultats !");
     }
     
     private void ping(int index) throws IOException{

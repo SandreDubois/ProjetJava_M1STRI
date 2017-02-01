@@ -27,7 +27,6 @@ public class PdosClient {
     
     private String listen(){
         String message = errStr;
-        //System.out.println("J'écoute.");
         try{
             DataInputStream iStream = new DataInputStream(sock.getInputStream());
             message = iStream.readUTF();
