@@ -299,7 +299,7 @@ public class PdosGame extends Thread {
                 precPlayer =  mListPlayer.size()-1;
 
             do{
-                sendTo(index, "Que voulez-vous faire ? ( 1: Surenchérir/ 2: Menteur/ 3: Tout pile.");
+                sendTo(index, "Que voulez-vous faire ? ( 1: Surenchérir/ 2: Menteur/ 3: Tout pile).");
 
                 try {
                     resp = mListPlayer.get(index).listen(2);
@@ -424,7 +424,7 @@ public class PdosGame extends Thread {
             /* variable contenant l'id du joueur courant */
             currentJ = (int) (Math.random() * mListPlayer.size());
             System.out.println("Premier tour");
-            broadcast("La partie commence !.");
+            broadcast("La partie commence !");
             firstProposition(currentJ);
             
             wakeUpAll();
