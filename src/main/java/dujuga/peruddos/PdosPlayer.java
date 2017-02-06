@@ -25,7 +25,7 @@ public class PdosPlayer extends Thread {
     private static final String errStr = "ERROR";
     
     private int mIdJoueur;          /* Id of the player */
-    public Socket mSocket;         /* Socket to talk with client */
+    public Socket mSocket = null;         /* Socket to talk with client */
     private String mPseudo = null;  /* Pseudonym of the player */
     private String mIp = null;      /* Ip of the player */
     private ArrayList <PdosDice>mDes; /* Declares an ArrayList of PdosDice named mDes */
@@ -91,26 +91,52 @@ public class PdosPlayer extends Thread {
                 break;
                 
             case -1 :   //User wants to create a game.
-                createGame();
+                /* Ask if the user want to create on the serveur or host the game */
+                do{
+                    send("Voulez-vous héberger la partie ?");
+                    send("[ -1 Oui | -3 Non ]");
+                    recept = listenInt();
+                    if(recept != -1 && recept != -3)
+                        send("Veuillez choisir une valeur correcte.");
+                }while(recept != -1 && recept != -3);
+                
+                if(recept == -1){
+                    /* Player host the game */
+                    createGame(false);
+                    send("YOUHOST");                    
+                } else if(recept == -3){ /* Server host the game */
+                    createGame(true);
+                }
                 break;
             default :   //User join a game.
-                if(recept < mDaddy.getNumberOfRoom()){
+                if(recept < mDaddy.getNumberOfRoom() && recept >= 0){
                     send("Tentative de connexion...");
-                    do {
-                        if(mDaddy.joinGame(this, recept) == -1){
-                            cptry++;
-                        }
-                        else{
-                            OK = true;
-                            setInGame(true);
-                        }
+                    
+                    if(mDaddy.isGameHosted(recept)){
+                        /* Party is hosted by server */
+                        do {
+                            if(mDaddy.joinGame(this, recept) == "-1"){
+                                cptry++;
+                            }
+                            else{
+                                OK = true;
+                                setInGame(true);
+                            }
 
-                        if(!OK && cptry > 5){
-                            OK = true;
-                            send("Impossible de rejoindre la partie.");
-                            recept = -3;
-                        }
-                    } while(!OK);
+                            if(!OK && cptry > 5){
+                                OK = true;
+                                send("Impossible de rejoindre la partie.");
+                                recept = -3;
+                            }
+                        } while(!OK);
+                    }
+                    else{
+                        /* a client is hosting a game */
+                        send("REDIRECT");
+                        //listen(0); /*waits for acknoledgment */
+                        send(mDaddy.joinGame(this, recept));
+                    }
+                    
                     break;
                 }
                 else{
@@ -124,7 +150,7 @@ public class PdosPlayer extends Thread {
     /**
      * Create a game and refers it to the PdosServer
      */
-    private void createGame(){
+    private void createGame(Boolean isHostedByServer){
         int cpt;
         do{
             if(!mDaddy.askForRoom()){
@@ -134,7 +160,10 @@ public class PdosPlayer extends Thread {
                     Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            cpt = mDaddy.addRoom(this);
+            if(isHostedByServer)
+                cpt = mDaddy.addRoom(this);
+            else
+                cpt = mDaddy.referRoom(this);
         } while(cpt == -1);
         
         mDaddy.launchGame(cpt);
@@ -260,6 +289,16 @@ public class PdosPlayer extends Thread {
 
     }
     
+    public void initializePlayer(){
+        while(!mDes.isEmpty()){
+            this.loseDice();
+        }
+        
+        for(int i = 0; i < 5; i++){
+            this.addDice();
+        }
+    }
+    
     /**
      * Listening the socket and return the string received.
      * @param cmd
@@ -268,21 +307,30 @@ public class PdosPlayer extends Thread {
      */
     public String listen(int cmd) throws IOException{
         String message = "ERROR";
-        if(cmd == 0)
-            send("WAITFOR STR");
-        else if(cmd == 1)
-            send("WAITFOR IP");
-        else if(cmd == 2)
-            send("WAITFOR PRO");
-        else if(cmd == 3)
-            send("PING");
-        message = "ERROR";
-        System.out.println("[ME] I'm listening " + mIp);
+        
+        if(mSocket != null){
+            if(cmd == 0)
+                send("WAITFOR STR");
+            else if(cmd == 1)
+                send("WAITFOR IP");
+            else if(cmd == 2)
+                send("WAITFOR PRO");
+            else if(cmd == 3)
+                send("PING");
+            else if(cmd == 4)
+                send("WAITFOR PSEU");
+            message = "ERROR";
+            System.out.println("[ME] I'm listening " + mIp);
 
-        DataInputStream iStream = new DataInputStream(mSocket.getInputStream());
-        message = iStream.readUTF();
-        System.out.println("[ME] I've heard : \"" + message + "\"");
-
+            DataInputStream iStream = new DataInputStream(mSocket.getInputStream());
+            message = iStream.readUTF();
+            System.out.println("[ME] I've heard : \"" + message + "\"");
+        }
+        else{
+            Scanner getFromUser = new Scanner(System.in);
+            System.out.print("> ");
+            message = getFromUser.nextLine();
+        }
         return message;
         
     }
@@ -337,8 +385,11 @@ public class PdosPlayer extends Thread {
     /**
      * Constructor.
      */
-    public PdosPlayer(){
-
+    public PdosPlayer(String pseudonym){
+        mIdJoueur = 0;
+        mPseudo = pseudonym;
+        mDes = new ArrayList();
+        mSocket = null;
     }
     
     /**
@@ -357,30 +408,45 @@ public class PdosPlayer extends Thread {
             mDes.add(new PdosDice());
     }
     
+    public PdosPlayer(Socket sock, int idJoueur, PdosGame game){
+        mIdJoueur = idJoueur;
+        mDes = new ArrayList();
+        mSocket = sock;
+        
+        /* HERE */
+        game.askToJoin(this);
+    }
+    
     /**
      * Regist the player to the PdosServer.
      * @throws IOException 
      */
     private void registPlayer() throws IOException{
         int cpt;
-        do{
-            /* Acquisition du pseudonyme : */
-            send("Quel est ton pseudonyme ?");
-            mPseudo = listen(0);
+        
+            do{
+                /* Acquisition du pseudonyme : */
+                mPseudo = listen(4);
 
-            /* Verify we can add client in the db */
-            if(!mDaddy.askForClient()){
-                try {
-                    this.sleep(100);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
-                    heIsGone();
+                if(mDaddy != null){
+                /* Verify we can add client in the db */
+                if(!mDaddy.askForClient()){
+                    try {
+                        this.sleep(100);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+                        heIsGone();
+                    }
                 }
-            }
-            cpt = mDaddy.addClient(this);
-            if(cpt == -1)
-                send("Echec de l'enregistrement : sélectionner un autre pseudonyme.");
-        } while(cpt == -1);
+                cpt = mDaddy.addClient(this);
+                if(cpt == -1)
+                    send("Echec de l'enregistrement : sélectionner un autre pseudonyme.");
+                }
+                else
+                    cpt = mGame.getNumberOfPlayers() - 1;
+            } while(cpt == -1);
+        
+        
         mIdJoueur = cpt;
 
         /* Acquisition de l'ip : */
@@ -412,7 +478,6 @@ public class PdosPlayer extends Thread {
         if(mJoueurOk){
             cpt = serverHandler();
         }
-            
         
         try {
             send("END");
@@ -427,10 +492,15 @@ public class PdosPlayer extends Thread {
      * @param message
      */
     public void send(String message) throws IOException {
+        if(mSocket != null){
             System.out.println("J'envoie " + message);
             DataOutputStream oStream;
             oStream = new DataOutputStream(mSocket.getOutputStream());
             oStream.writeUTF(message);
+        }
+        else{
+            System.out.println(message);
+        }
     }
     
     /**
@@ -438,21 +508,23 @@ public class PdosPlayer extends Thread {
      * @return 
      */
     private synchronized int serverHandler(){
-        int cpt = -2;
+        int cpt = -1;
         String rep;
         int repServ = -2;
         boolean success = false, exit = false;
+        gameStart = false;
+        
         
         do{
-            try {
-                cpt = chooseGame();
-            } catch (IOException ex) {
-                Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+            if(mDaddy != null){
+                try {
+                    cpt = chooseGame();
+                } catch (IOException ex) {
+                    Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             /* trois cas : le joueur veut quitter, il veut créer, il veut rejoindre */
             switch(cpt){
-                case -3:
-                    break;
                 case -2:
                     break;
                 default: //Join or create a game :
@@ -474,6 +546,12 @@ public class PdosPlayer extends Thread {
                     break;
             }
         }while(cpt != -2);
+        
+        try {
+            sleep(1000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         return cpt;
     }

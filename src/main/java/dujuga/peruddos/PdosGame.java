@@ -6,6 +6,7 @@
 package dujuga.peruddos;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,11 +17,12 @@ import java.util.logging.Logger;
  */
 public class PdosGame extends Thread {
     
-    private PdosServer mDaddy;
-    private int mIdPdosGame;
-    private ArrayList <PdosPlayer>mListPlayer; /* ArrayList where players will be. */
-    private int mNumber = 1;
-    private int mValor = 1;
+    //protected String mAddress; -> LINKED
+    //protected PdosServer mDaddy; -> HOSTED
+    protected int mIdPdosGame;
+    protected ArrayList <PdosPlayer>mListPlayer; /* ArrayList where players will be. */
+    protected int mNumber = 1;
+    protected int mValor = 1;
     
     /**
      * Try to add the new PdosPlayer. 
@@ -44,7 +46,7 @@ public class PdosGame extends Thread {
      * Broadcast the message given in parameters to all connected players.
      * @param message 
      */
-    private void broadcast(String message){
+    protected void broadcast(String message){
         for(int i = 0; i < mListPlayer.size(); i++){
             sendTo(i, message);
         }
@@ -58,7 +60,7 @@ public class PdosGame extends Thread {
      *      if there is others players, designates the 2th player as the new creator.
      * @param i : the index in the mListPlayer.
      */
-    private void checkPlayer(int i){
+    protected void checkPlayer(int i){
         System.out.println("Check du joueur : " + mListPlayer.get(i).getPseudonym());
         if(!mListPlayer.get(i).isAlive()){
             broadcast("Le joueur " + mListPlayer.get(i).getPseudonym() + " est parti.");
@@ -76,7 +78,7 @@ public class PdosGame extends Thread {
      * Then kick him.
      * @param i : index of the PdosPlayer in the mListPlayer.
      */
-    private void ejectPlayer(int i){
+    protected void ejectPlayer(int i){
         //String msg = mListPlayer.get(i).getPseudonym();
         mListPlayer.get(i).setInGame(false);
         mListPlayer.get(i).setGame(null);
@@ -87,7 +89,7 @@ public class PdosGame extends Thread {
     /**
      * Broadcast to every players in the party that the creator won then ejects every players. 
      */
-    private void endGame(){
+    protected void endGame(){
         broadcast("Un gros GG à " + mListPlayer.get(0).getPseudonym() + " : victoire écrasante !");
         
         for(int i = mListPlayer.size() - 1; i >= 0; i--)
@@ -108,7 +110,7 @@ public class PdosGame extends Thread {
      * Verify if the index player has succeed a "Tout pile".
      * @param index
      */
-    private void exactly(int index){
+    protected void exactly(int index){
         int cptDice = 0;
         int sizeDep = mListPlayer.size();
         String pseudonym = mListPlayer.get(index).getPseudonym();
@@ -151,7 +153,7 @@ public class PdosGame extends Thread {
      * Handle the proposition and the turn of the first player.
      * @param index     : index of the current player.
      */
-    private void firstProposition(int index){
+    protected void firstProposition(int index){
         int sommDice = 0;
         String resp = null;        
         mNumber = 0;
@@ -191,12 +193,16 @@ public class PdosGame extends Thread {
         }
     }
     
+    public String getIp(){
+        return "error";
+    }
+    
     /**
      * Verify if the player placed in index place has lose.
      * @param index     : index of the PdosPlayer.
      * @return          : if the player has lose.
      */
-    private boolean didThePlayerLose(int index){
+    protected boolean didThePlayerLose(int index){
         if(index < mListPlayer.size()){
             boolean returned = (mListPlayer.get(index).hasDice() && mListPlayer.get(index).isAlive());
             
@@ -214,7 +220,7 @@ public class PdosGame extends Thread {
      * Return if the player is the last one in the party
      * @return 
      */
-    private boolean didAPlayerWin(){
+    protected boolean didAPlayerWin(){
         return (mListPlayer.size() == 1);
     }
     
@@ -244,7 +250,7 @@ public class PdosGame extends Thread {
      * Verify of the index-1 player is a liar or not.
      * @param index 
      */
-    private void liar(int index){
+    protected void liar(int index){
         int jCurrent = index;
         int jPrec = index - 1;
         String pseudonymPrec = "";
@@ -289,7 +295,7 @@ public class PdosGame extends Thread {
      * @param index
      * @param firstP    specify if the player plays first.
      */
-    private void loseConnectionDuringGame(int index, boolean firstP){
+    protected void loseConnectionDuringGame(int index, boolean firstP){
         int nextPlayer = index;
         
         ejectPlayer(index);
@@ -309,7 +315,7 @@ public class PdosGame extends Thread {
      * @param index
      * @return if the player has disconnect during the method
      */
-    private boolean outbid(int index){
+    protected boolean outbid(int index){
         int nbDice = 0;
         int valorDice = 0;
         boolean loseConnection = false;
@@ -357,12 +363,11 @@ public class PdosGame extends Thread {
      * @param index     : is the id of the game.
      * @param daddy     : is the server who host the game.
      */
-    public PdosGame(PdosPlayer creator, int index, PdosServer daddy){ /* Create a game with a main player and a index j */
+    public PdosGame(PdosPlayer creator, int index/*, PdosServer daddy*/){ /* Create a game with a main player and a index j */
         mListPlayer = new ArrayList();
         mIdPdosGame = index; /* Add index as the id of game */
-        mDaddy = daddy;
+        //mDaddy = daddy;
         mListPlayer.add(creator);
-        
     }
     
     /**
@@ -370,7 +375,7 @@ public class PdosGame extends Thread {
      * @param index
      * @throws IOException 
      */
-    private void ping(int index) throws IOException{
+    protected void ping(int index) throws IOException{
         sendTo(index, "PING");
         mListPlayer.get(index).listen(2);
     }
@@ -379,7 +384,7 @@ public class PdosGame extends Thread {
      * Handle the proposition and the turn of the current player.
      * @param index     : index of the current player.
      */
-    private void proposition(int index){
+    protected void proposition(int index){
         int sommDice = 0;
         String resp = "0";
         int valorDice = 0;
@@ -459,9 +464,7 @@ public class PdosGame extends Thread {
         int currentJ; /* variable contenant l'id du joueur en train de jouer */
         
         sendTo(0, "Vous avez créer une partie.");
-        
-        waitingLoop();
-        
+                
         if(!mListPlayer.isEmpty()){
             broadcast("La partie est pleine !");
             wakeUpAllForStart();
@@ -470,8 +473,6 @@ public class PdosGame extends Thread {
             } catch (InterruptedException ex) {
                 Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
-            /* There's some players */
             
             /* variable contenant l'id du joueur courant */
             currentJ = (int) (Math.random() * mListPlayer.size());
@@ -483,7 +484,7 @@ public class PdosGame extends Thread {
             endGame();
         }
         
-        unregister();
+        //unregister();
         System.out.println("Fin de partie.");
     }
     
@@ -492,7 +493,7 @@ public class PdosGame extends Thread {
      * @param numberPlayer  : index, in int, of the player.
      * @param message       : message, in String, to send.
      */
-    private void sendTo(int numberPlayer, String message) {
+    protected void sendTo(int numberPlayer, String message) {
         if(numberPlayer >= 0 && numberPlayer < mListPlayer.size()){
             try{
                 mListPlayer.get(numberPlayer).send(message);
@@ -513,12 +514,12 @@ public class PdosGame extends Thread {
     /**
      * Remove the PdosGame in the ArrayList of the PdosGame of the server.
      */
-    private void unregister(){
+    /*protected void unregister(){
         int returned = -1;
         
         do{
             if(mDaddy.askForRoom())
-                returned = mDaddy.delRoom(mIdPdosGame); 
+                returned = mDaddy.delRoom(mIdPdosGame);
             
             try{
                 sleep(100);
@@ -528,39 +529,8 @@ public class PdosGame extends Thread {
             
         } while(returned == -1);
         System.out.println("La partie : " + mIdPdosGame + " a été retiré.");
-    }
+    }*/
     
-    /**
-     * Loop where the PdosGame expected player to join. Check all seconds that connected player are connected.
-     */
-    private void waitingLoop(){
-        int actually = 1;
-        
-        sendTo(0, "Attente de l'arrivée de nouveaux joueurs.");
-        
-        do{
-            /* Si nouveau joueur */
-            if(mListPlayer.size() > actually){
-                sendTo(mListPlayer.size()-1, "Bienvenue dans la partie de " + this.getCreatorPseudonym());
-                broadcast("Le joueur " + mListPlayer.get(actually).getPseudonym() + " a rejoint la partie.");
-                actually = mListPlayer.size();
-            }
-            
-            /* Si le PdosPlayer créateur n'est pas encore en activité */
-            for(int i = 0; i < mListPlayer.size(); i++){
-                checkPlayer(i);
-                actually = mListPlayer.size();
-            }
-            
-            try {
-                sleep(2000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(PdosGame.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } while(mListPlayer.size() < 6 && !mListPlayer.isEmpty());
-        
-    }
-
     public synchronized void notifyMe(){
         this.notify();
     }
@@ -568,7 +538,7 @@ public class PdosGame extends Thread {
     /**
      * Invokes the wakeUp() method on all players.
      */
-    private void wakeUpAll(){
+    protected void wakeUpAll(){
         for(int i = 0; i < mListPlayer.size(); i++)
             wakeUp(i);
     }
@@ -576,7 +546,7 @@ public class PdosGame extends Thread {
     /**
      * Invokes the wakeUp() method on player and notify them that the party start.
      */
-    private void wakeUpAllForStart(){
+    protected void wakeUpAllForStart(){
         for(int i = 0; i < mListPlayer.size(); i++)
             mListPlayer.get(i).notifyAsk();
     }
@@ -585,7 +555,7 @@ public class PdosGame extends Thread {
      * Invokes the notifyMe() method of the ith player in the ArrayList of PdosPlayer. 
      * @param i     : index of the player, in int.
      */
-    private void wakeUp(int i){
+    protected void wakeUp(int i){
         mListPlayer.get(i).notifyMe();
     }
     

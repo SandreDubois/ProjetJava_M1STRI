@@ -9,7 +9,11 @@ import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -18,9 +22,10 @@ import java.util.Scanner;
 public class PdosClient {
     /* Créer une méthode permettant le changement de l'adresse par l'utilisateur. */
     private String adresse = "127.0.0.1";
-    Socket sock = null;
-    
+    Socket sock = null, sauv = null;
+    public String mPseudonym = null;
     String mMessage = "PDOSNULL";
+    ArrayList <PdosPlayer> mListPlayer = new ArrayList();
     
     private static final int errInt = -3;
     private static final String errStr = "NONE";
@@ -82,12 +87,28 @@ public class PdosClient {
     }
     
     /* Asks the pseudonym that the user wants then sends to the server the pseudonym  */
-    private void getAndSendPseudonyme(Socket sockService){
+    private void getAndSendPseudonyme(Socket sockService, int cpt){
         String pseudostr = errStr;
+        
+        if(cpt > 1)
+            System.out.println("Ce pseudonyme est déjà pris.");
         try{
-            send(askEntry("Veuillez entrer votre pseudo."));
+            mPseudonym = askEntry("Veuillez entrer votre pseudo.");
+            send(mPseudonym);
         } catch(IOException ioe){
             System.out.println("Erreur lors de l'envoie du pseudo : " + ioe.getMessage());
+        }
+    }
+    
+    private synchronized void host() {
+        PdosPlayer me = new PdosPlayer(mPseudonym);
+        PdosClientGame pcg = new PdosClientGame(me, 0);
+        pcg.start();
+        
+        try {
+            wait();
+        } catch (InterruptedException ex) {
+            Logger.getLogger(PdosClient.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -96,9 +117,9 @@ public class PdosClient {
         try{
             String ip = InetAddress.getLocalHost().getHostAddress();
             int port = sock.getLocalPort() ;
-            send(ip + ":" + port);
+            send(ip);
         } catch(IOException ioe){
-            System.out.println("Erreur lors de l'envoie du pseudo : " + ioe.getMessage());
+            System.out.println("Erreur lors de l'envoie de l'ip : " + ioe.getMessage());
         }
     }
     
@@ -123,13 +144,46 @@ public class PdosClient {
         return OK;
     }
     
+    private int initSocket(String ip){
+        int OK = 0;
+        int tryCo = 0;
+        
+        do{
+            try{
+                sock = new Socket(ip, 18050);
+                System.out.println("Connexion réussi au serveur.");
+                OK = 1;
+            }
+            catch(IOException ioe){
+                tryCo++;
+            }
+        } while(tryCo < 5 && OK != 1);
+        
+        return OK;
+    }
+    
+    private void joinUser() throws IOException{
+        String ip = null;
+        /* here : connection to another player */
+        send("OK");
+        ip = listen();
+        System.out.println("Vous essayer de rejoindre une partie hostée par " + ip);
+        sauv = sock;
+        
+        if(initSocket(ip) == 1){
+            socketHandler();
+        }
+        else {
+            System.out.println("Echec de la connexion, retour au serveur.");
+        }
+        sock = sauv;
+    }
+    
     /* Connect user to the server */
     private void socketHandler() throws IOException {
         boolean cont = true;
         String message = null;
-        int chiffre = 5, cptNone = 0;
-        
-                        
+        int chiffre = 5, cptNone = 0, cptPseu = 0;
         /* Boucle de dialogue */
         do{
             message = listen();
@@ -160,6 +214,21 @@ public class PdosClient {
             }
             else if(message.compareTo("NONE") == 0){
                 cptNone++;
+            }
+            else if(message.compareTo("REDIRECT") == 0){
+                joinUser();
+            }
+            else if(message.compareTo("YOUHOST") == 0){
+                host();
+            }
+            else if(message.compareTo("WAITFOR PSEU") == 0){
+                if(cptPseu == 0 || mPseudonym == null){
+                    this.getAndSendPseudonyme(sock, cptPseu);
+                    cptPseu++;
+                }
+                else
+                    send(mPseudonym);
+                
             }
             else
                 System.out.println("[SERVEUR] " + message);

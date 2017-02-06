@@ -27,6 +27,7 @@ public class PdosServer {
     private boolean lockOnRoom = false;
     private ArrayList <PdosPlayer> myClients = new ArrayList();
     private ArrayList <PdosGame> myRooms = new ArrayList();
+    private ArrayList <Boolean> isHosted = new ArrayList();
     private int numberOfClient = 0; /* Variable qui sert à compter le nombre de client courant. */
     private final int serverPort = 18000;
     
@@ -80,11 +81,11 @@ public class PdosServer {
             return -1;
         
         /* Create Room */
-        myRooms.add(new PdosGame(creator, returned, this));
+        myRooms.add(new PdosHostedGame(creator, returned, this));
         creator.setInGame(true);
         returned = myRooms.size(); 
         lockOnRoom = false;               /* remove the lock */
-        
+        isHosted.add(true);
         System.out.println(sauv + " " + returned);
         
         if(returned > sauv) {                /* return the id */
@@ -148,6 +149,7 @@ public class PdosServer {
             return -1;
         
         myRooms.remove(index);
+        isHosted.remove(index);
         lockOnRoom = false;
         return 0;
     }
@@ -189,6 +191,10 @@ public class PdosServer {
         return myRooms;
     }
     
+    public Boolean isGameHosted(int index){
+        return isHosted.get(index);
+    }
+    
     /**
      * Invokes the method askToJoin of the game placed with the index in the ArrayList PdosGame
      * for the PdosPlayer newP.
@@ -196,14 +202,22 @@ public class PdosServer {
      * @param index     Id of the party to join.
      * @return          the result of the method askToJoin of the party.
      */
-    public int joinGame(PdosPlayer newP, int index){
-        return myRooms.get(index).askToJoin(newP);
+    public String joinGame(PdosPlayer newP, int index){
+        if(isHosted.get(index))
+            return "" + myRooms.get(index).askToJoin(newP);
+        
+        else{
+            System.out.println("LOG : " + myRooms.get(index).getIp());
+            return myRooms.get(index).getIp();
+            
+        }
     }
     
     /**
      * Launch the index th games in a new thread.
      * @param index 
      */
+    @Deprecated
     public void launchGame(int index){
         myRooms.get(index).start();
     }
@@ -225,6 +239,29 @@ public class PdosServer {
         } catch (UnknownHostException ex) {
             Logger.getLogger(PdosServer.class.getName()).log(Level.SEVERE, null, ex);
         }        
+    }
+    
+    public int referRoom(PdosPlayer creator){
+        int sauv = myRooms.size();        /* int keep the initial number of players */
+        int returned = myRooms.size();    /* for know if the registration works */
+        
+        if(lockOnRoom == false)           /* if there's no lock on the table, return error */
+            return -1;
+        
+        /* Create Room */
+        myRooms.add(new PdosLinkedGame(creator, returned));
+        creator.setInGame(true);
+        returned = myRooms.size(); 
+        lockOnRoom = false;               /* remove the lock */
+        isHosted.add(false);
+        System.out.println(sauv + " " + returned);
+        
+        if(returned > sauv) {                /* return the id */
+            myRooms.get(sauv).setIdGame(sauv);
+            return returned-1;
+        }
+        else
+            return -1;                      /* if not, return a error */
     }
     
     /**
@@ -256,7 +293,7 @@ public class PdosServer {
                         System.out.println("Erreur de création du socket service : " + ioe.getMessage());
                     }
 
-                    /* CREER UN THREAD POUR LA GESTION DU CLIENT */
+                    /* CREER UN eTHREAD POUR LA tESTION DU CLIENT */
                     PdosPlayer player = new PdosPlayer(sockService, numberOfClient, this);
                     player.start();
                 }
