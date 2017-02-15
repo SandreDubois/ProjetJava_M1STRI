@@ -26,6 +26,7 @@ public class PdosClient {
     public String mPseudonym = null;
     String mMessage = "PDOSNULL";
     ArrayList <PdosPlayer> mListPlayer = new ArrayList();
+    int cptPseu = 0;
     
     private static final int errInt = -3;
     private static final String errStr = "NONE";
@@ -89,27 +90,45 @@ public class PdosClient {
     /* Asks the pseudonym that the user wants then sends to the server the pseudonym  */
     private void getAndSendPseudonyme(Socket sockService, int cpt){
         String pseudostr = errStr;
+        String pseudoTemp = null;
+        String message = null;
         
         if(cpt > 1)
             System.out.println("Ce pseudonyme est déjà pris.");
         try{
-            mPseudonym = askEntry("Veuillez entrer votre pseudo.");
-            send(mPseudonym);
+            pseudoTemp = askEntry("Veuillez entrer votre pseudo.");
+            send(pseudoTemp);
+            message = listen();
+            System.out.println("J'ai recu : " + message);
+            if(message.compareTo("OK") == 0){
+                mPseudonym = pseudoTemp;
+            }
         } catch(IOException ioe){
             System.out.println("Erreur lors de l'envoie du pseudo : " + ioe.getMessage());
         }
     }
     
+    public synchronized void notifyMe(){
+        this.notify();
+    }
+    
     private synchronized void host() {
         PdosPlayer me = new PdosPlayer(mPseudonym);
-        PdosClientGame pcg = new PdosClientGame(me, 0);
+        PdosClientGame pcg = new PdosClientGame(this, me, 0);
         pcg.start();
-        
         try {
             wait();
         } catch (InterruptedException ex) {
             Logger.getLogger(PdosClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        try {
+            send("ISBACK");
+        } catch (IOException ex) {
+            Logger.getLogger(PdosClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        
     }
     
     /* Sends ip and port to the server  */
@@ -176,18 +195,22 @@ public class PdosClient {
         else {
             System.out.println("Echec de la connexion, retour au serveur.");
         }
+        send("END PING");
+        System.out.println("Retour vers le serveur");        
         sock = sauv;
+        send("HEY!");
     }
     
     /* Connect user to the server */
     private void socketHandler() throws IOException {
         boolean cont = true;
         String message = null;
-        int chiffre = 5, cptNone = 0, cptPseu = 0;
+        int chiffre = 5, cptNone = 0;
         /* Boucle de dialogue */
         do{
             message = listen();
             if(message.compareTo("WAITFOR INT") == 0){
+                System.out.println("Demande d'un chiffre");
                 sendInt(askNumber());
                 cptNone = 0;
             }
@@ -222,13 +245,10 @@ public class PdosClient {
                 host();
             }
             else if(message.compareTo("WAITFOR PSEU") == 0){
-                if(cptPseu == 0 || mPseudonym == null){
+                if(mPseudonym == null)
                     this.getAndSendPseudonyme(sock, cptPseu);
-                    cptPseu++;
-                }
                 else
                     send(mPseudonym);
-                
             }
             else
                 System.out.println("[SERVEUR] " + message);

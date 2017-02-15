@@ -150,6 +150,11 @@ public class PdosServer {
         
         myRooms.remove(index);
         isHosted.remove(index);
+        
+        for(int i = 0; i < myRooms.size(); i++){
+            myRooms.get(i).setIdGame(myRooms.get(i).getIndex() - 1);
+        }
+        
         lockOnRoom = false;
         return 0;
     }

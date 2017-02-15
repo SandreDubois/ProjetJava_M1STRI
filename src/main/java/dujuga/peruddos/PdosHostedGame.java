@@ -22,6 +22,8 @@ public class PdosHostedGame extends PdosGame{
         mDaddy = daddy;
     }
     
+    
+    
     /**
      * Main method of the PdosGame.
      * Alert the PdosPlayer that he has start a game then waits for others players to join.
