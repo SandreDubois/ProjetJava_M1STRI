@@ -23,7 +23,7 @@ public class PdosGame extends Thread {
     /* ArrayList where players will be. */
     protected int mNumber = 1;
     protected int mValor = 1;
-
+    
     /**
      * Try to add the new PdosPlayer. Compare the number of player already in
      * the game.

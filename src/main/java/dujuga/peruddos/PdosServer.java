@@ -197,7 +197,9 @@ public class PdosServer {
     }
     
     public Boolean isGameHosted(int index){
-        return isHosted.get(index);
+        if(isHosted.get(index) == true)
+            return true;
+        return false;
     }
     
     /**

@@ -102,7 +102,8 @@ public class PdosPlayer extends Thread {
             case -1 :   //User wants to create a game.
                 /* Ask if the user want to create on the serveur or host the game */
                 do{
-                    try {
+                    /* this block serves for the implementation for the third version */
+                    /*try {
                         send("Voulez-vous héberger la partie ?");
                         send("[ -1 Oui | -3 Non ]");
                         recept = listenInt();
@@ -110,7 +111,8 @@ public class PdosPlayer extends Thread {
                             send("Veuillez choisir une valeur correcte.");
                     } catch (IOException ex) {
                         this.heIsGone();
-                    }
+                    }*/
+                    recept = -3;
                 }while(recept != -1 && recept != -3);
                 
                 if(recept == -1){
@@ -135,7 +137,9 @@ public class PdosPlayer extends Thread {
                     }
                     if(mDaddy.isGameHosted(recept)){
                         /* Party is hosted by server */
+                        System.out.println("YES");
                         do {
+                            
                             if(mDaddy.joinGame(this, recept) == "-1"){
                                 cptry++;
                             }
@@ -262,8 +266,6 @@ public class PdosPlayer extends Thread {
             
         }while(rep.compareTo("return ping") == 0 && serverWakeMe);
         
-        System.out.println("PDOS PLAYER, J'ai reçu : " + rep);
-
         switch(rep){
             case "1" :
                 repServ = 1;

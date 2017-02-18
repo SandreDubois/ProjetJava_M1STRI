@@ -198,7 +198,6 @@ public class PdosClient {
         send("END PING");
         System.out.println("Retour vers le serveur");        
         sock = sauv;
-        send("HEY!");
     }
     
     /* Connect user to the server */
@@ -206,11 +205,11 @@ public class PdosClient {
         boolean cont = true;
         String message = null;
         int chiffre = 5, cptNone = 0;
+        int rep = 0;
         /* Boucle de dialogue */
         do{
             message = listen();
             if(message.compareTo("WAITFOR INT") == 0){
-                System.out.println("Demande d'un chiffre");
                 sendInt(askNumber());
                 cptNone = 0;
             }

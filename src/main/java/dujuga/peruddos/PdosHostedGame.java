@@ -34,12 +34,14 @@ public class PdosHostedGame extends PdosGame{
     @Override
     public void run(){
         int currentJ; /* variable contenant l'id du joueur en train de jouer */
+        int repServ = -1;
         
         sendTo(0, "Vous avez créer une partie.");
         
         waitingLoop();
-        
+        System.out.println("Mon id est : " + mIdPdosGame);
         if(!mListPlayer.isEmpty()){
+            unregister();
             broadcast("La partie est pleine !");
             wakeUpAllForStart();
             try {
