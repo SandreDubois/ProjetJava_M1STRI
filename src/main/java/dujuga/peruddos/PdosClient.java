@@ -45,7 +45,7 @@ public class PdosClient {
     }
     
     /* send a message (in string) given to the socket mSocket. */
-    private void send(String message) throws IOException{
+    public void send(String message) throws IOException{
         DataOutputStream oStream = new DataOutputStream(sock.getOutputStream());
         oStream.writeUTF(message);
     }
@@ -248,6 +248,9 @@ public class PdosClient {
                     this.getAndSendPseudonyme(sock, cptPseu);
                 else
                     send(mPseudonym);
+            }
+            else if(message.compareTo("ENDREC") == 0){
+                send("ENDREC");
             }
             else
                 System.out.println("[SERVEUR] " + message);

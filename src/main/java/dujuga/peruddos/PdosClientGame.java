@@ -412,6 +412,11 @@ public class PdosClientGame extends PdosGame {
         this.waitingLoop();
         if(!mListPlayer.isEmpty()){
             broadcast("La partie est pleine !");
+            try {
+                mDaddy.send("ENDREC");
+            } catch (IOException ex) {
+                Logger.getLogger(PdosClientGame.class.getName()).log(Level.SEVERE, null, ex);
+            }
             wakeUpAllForStart();
             try {
                 sleep(5000);

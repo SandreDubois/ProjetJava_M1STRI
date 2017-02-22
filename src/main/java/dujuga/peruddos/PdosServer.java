@@ -224,7 +224,6 @@ public class PdosServer {
      * Launch the index th games in a new thread.
      * @param index 
      */
-    @Deprecated
     public void launchGame(int index){
         myRooms.get(index).start();
     }
@@ -246,6 +245,14 @@ public class PdosServer {
         } catch (UnknownHostException ex) {
             Logger.getLogger(PdosServer.class.getName()).log(Level.SEVERE, null, ex);
         }        
+    }
+    
+    public void removeLinkedRoom(PdosPlayer creator){
+        for(int i = 0; i < myRooms.size(); i++){
+            if(creator.getPseudonym().compareTo(myRooms.get(i).mListPlayer.get(0).getPseudonym()) == 0){
+                myRooms.remove(i);
+            }
+        }
     }
     
     public int referRoom(PdosPlayer creator){
@@ -278,7 +285,7 @@ public class PdosServer {
         for(int i = 0; i < myClients.size(); i++){
             System.out.println(i + " : " +myClients.get(i).getPseudonym());
         }
-    }
+    }    
     
     /**
      * Listen for new connection.

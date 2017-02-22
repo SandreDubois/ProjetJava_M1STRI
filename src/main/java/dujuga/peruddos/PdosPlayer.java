@@ -103,7 +103,7 @@ public class PdosPlayer extends Thread {
                 /* Ask if the user want to create on the serveur or host the game */
                 do{
                     /* this block serves for the implementation for the third version */
-                    /*try {
+                    try {
                         send("Voulez-vous héberger la partie ?");
                         send("[ -1 Oui | -3 Non ]");
                         recept = listenInt();
@@ -111,8 +111,7 @@ public class PdosPlayer extends Thread {
                             send("Veuillez choisir une valeur correcte.");
                     } catch (IOException ex) {
                         this.heIsGone();
-                    }*/
-                    recept = -3;
+                    }
                 }while(recept != -1 && recept != -3);
                 
                 if(recept == -1){
@@ -557,6 +556,24 @@ public class PdosPlayer extends Thread {
         }
     }
     
+    void clientGameHandler(){
+        String rep = null;
+        System.out.println("CLIENTGAMEHANDLER");
+        do{
+            try {
+                rep = listen(0);
+            } catch (IOException ex) {
+                Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            if(rep.compareTo("ENDREC") == 0){
+                System.out.println("HERE");
+                mDaddy.removeLinkedRoom(this);
+            }
+            
+        }while(rep.compareTo("ISBACK") != 0);
+    }
+    
     /**
      * Maintains communations between server and client, and between PdosGame and client when he has choosen a game.
      * @return 
@@ -588,12 +605,13 @@ public class PdosPlayer extends Thread {
                     System.out.println("Le joueur est revenu.");
                     break;
                 case 9998:
-                    try {
+                    //try {
                         /* Wait for an response */
-                        listen(0);
-                    } catch (IOException ex) {
+                    clientGameHandler();
+                        //listen(0);
+                    /*} catch (IOException ex) {
                         Logger.getLogger(PdosPlayer.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+                    }*/
                     System.out.println("Le joueur est revenu.");
                     break;
                 default: //Join or create a game :
